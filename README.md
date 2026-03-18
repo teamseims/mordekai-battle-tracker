@@ -1,20 +1,16 @@
-{
-  "name": "mordekai-battle-tracker",
-  "private": true,
-  "version": "1.0.0",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "recharts": "^2.12.7"
-  },
-  "devDependencies": {
-    "@vitejs/plugin-react": "^4.3.1",
-    "vite": "^5.4.2"
-  }
-}
+# Mordekai's Broken Seal — Chronicle of Battle
+
+A D&D combat tracker with per-round stat entry, dashboards, charts, and party management.
+
+## Quick Start
+
+```bash
+npm install
+npm run dev
+```
+
+Open the URL shown in your terminal (usually http://localhost:5173).
+
+## Deploy
+
+Run `npm run build` and host the `dist/` folder on any static host.
