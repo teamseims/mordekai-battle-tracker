@@ -15,6 +15,8 @@ const STAT_COLORS = {
 };
 const PLAYER_COLORS = ["#d4442a","#4682b4","#2e8b57","#daa520","#9b59b6","#e67e22","#1abc9c","#e74c6c","#8bc34a","#cd853f"];
 const MAX_ROUNDS = 20;
+const DMG_TYPES = ["Slashing","Piercing","Bludgeoning","Fire","Cold","Lightning","Thunder","Poison","Acid","Necrotic","Radiant","Force","Psychic"];
+const DMG_TYPE_COLORS = { Slashing:"#d4442a", Piercing:"#c17f3a", Bludgeoning:"#8b7355", Fire:"#e85d04", Cold:"#4fc3f7", Lightning:"#ffd54f", Thunder:"#9575cd", Poison:"#66bb6a", Acid:"#aed581", Necrotic:"#7e57c2", Radiant:"#fff176", Force:"#80deea", Psychic:"#f48fb1" };
 const DEFAULT_PLAYERS = ["King Gizzard", "Lucien", "Shio", "Kazzak", "Fazula"];
 
 function generateId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
@@ -24,8 +26,14 @@ const CLIENT_ID = generateId();
 
 function createEmptyBattle(name, players) {
   const data = {};
-  players.forEach((p) => { data[p] = {}; STAT_TYPES.forEach((s) => { data[p][s] = {}; for (let r = 1; r <= MAX_ROUNDS; r++) data[p][s][r] = 0; }); });
-  return { id: generateId(), name, rounds: 1, data };
+  const dmgEntries = {};
+  players.forEach((p) => {
+    data[p] = {};
+    STAT_TYPES.forEach((s) => { data[p][s] = {}; for (let r = 1; r <= MAX_ROUNDS; r++) data[p][s][r] = 0; });
+    dmgEntries[p] = {};
+    for (let r = 1; r <= MAX_ROUNDS; r++) dmgEntries[p][r] = [];
+  });
+  return { id: generateId(), name, rounds: 1, data, dmgEntries };
 }
 
 /* ─── Persistence (Supabase when configured, localStorage otherwise) ─── */
@@ -219,9 +227,95 @@ function ParchmentPanel({ children, style: extraStyle }) {
   );
 }
 
+/* ─── Damage Cell ─── */
+function DmgCell({ entries, defaultType, onChange }) {
+  const [open, setOpen] = useState(false);
+  const [tooltipVisible, setTooltipVisible] = useState(false);
+  const [newAmt, setNewAmt] = useState("");
+  const [newType, setNewType] = useState(defaultType || DMG_TYPES[0]);
+  const ref = useRef(null);
+  const panelRef = useRef(null);
+  const [pos, setPos] = useState({ top: 0, left: 0 });
+
+  const total = entries.reduce((a, e) => a + (e.amount || 0), 0);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (ev) => {
+      const inTrigger = ref.current && ref.current.contains(ev.target);
+      const inPanel = panelRef.current && panelRef.current.contains(ev.target);
+      if (!inTrigger && !inPanel) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  const getRect = () => {
+    const r = ref.current.getBoundingClientRect();
+    return { top: r.bottom + 4, left: Math.min(r.left, window.innerWidth - 224) };
+  };
+
+  const openPanel = () => { setPos(getRect()); setNewType(defaultType || DMG_TYPES[0]); setTooltipVisible(false); setOpen(true); };
+  const addEntry = () => { const amt = parseInt(newAmt); if (!amt || amt <= 0) return; onChange([...entries, { amount: amt, type: newType }]); setNewAmt(""); };
+  const removeEntry = (i) => onChange(entries.filter((_, idx) => idx !== i));
+
+  return (
+    <div ref={ref} style={{ position:"relative", display:"inline-flex", alignItems:"center", gap:3, justifyContent:"center" }}>
+      <span
+        onMouseEnter={() => { if (!open && entries.length > 0) { setPos(getRect()); setTooltipVisible(true); } }}
+        onMouseLeave={() => setTooltipVisible(false)}
+        style={{ fontSize:12, fontWeight:700, color: total > 0 ? "#d4442a" : "#3a3020", minWidth:18, display:"inline-block", textAlign:"center" }}
+      >{total || "–"}</span>
+      <button onClick={openPanel} style={{ background:"#2a1e10", border:"1px solid #3a3020", borderRadius:3, color:"#8b7355", cursor:"pointer", fontSize:10, fontWeight:700, padding:"0px 4px", lineHeight:"14px" }}>+</button>
+
+      {/* Hover breakdown tooltip */}
+      {tooltipVisible && !open && entries.length > 0 && (
+        <div style={{ position:"fixed", top:pos.top, left:pos.left, zIndex:200, background:"#1a1510", border:"1px solid #5c4a32", borderRadius:4, padding:"6px 10px", fontSize:11, fontFamily:"'Spectral', serif", pointerEvents:"none", whiteSpace:"nowrap", boxShadow:"0 4px 16px rgba(0,0,0,0.6)" }}>
+          {entries.map((e, i) => (
+            <div key={i} style={{ display:"flex", gap:8, alignItems:"center", color: DMG_TYPE_COLORS[e.type] || "#c4a97d" }}>
+              <span style={{ fontWeight:700 }}>{e.amount}</span><span>{e.type || "—"}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Entry panel */}
+      {open && (
+        <div ref={panelRef} style={{ position:"fixed", top:pos.top, left:pos.left, zIndex:300, background:"#1a1510", border:"1px solid #5c4a32", borderRadius:6, padding:"10px 12px", minWidth:212, boxShadow:"0 8px 32px rgba(0,0,0,0.7)", fontFamily:"'Spectral', serif" }}>
+          <div style={{ fontSize:10, color:"#daa520", fontFamily:"'MedievalSharp', cursive", marginBottom:8, letterSpacing:1 }}>Damage Entries</div>
+          {entries.length > 0 ? (
+            <div style={{ display:"flex", flexDirection:"column", gap:4, marginBottom:8 }}>
+              {entries.map((e, i) => (
+                <div key={i} style={{ display:"flex", alignItems:"center", gap:6, background:"#0d0b09", borderRadius:3, padding:"3px 6px" }}>
+                  <span style={{ fontWeight:700, color: DMG_TYPE_COLORS[e.type] || "#c4a97d", minWidth:24 }}>{e.amount}</span>
+                  <span style={{ color:"#8b7355", fontSize:11, flex:1 }}>{e.type || "—"}</span>
+                  <button onClick={() => removeEntry(i)} style={{ background:"transparent", border:"none", color:"#5c3030", cursor:"pointer", fontSize:13, fontWeight:700, padding:"0 2px", lineHeight:1 }}>×</button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ fontSize:11, color:"#3a3020", fontStyle:"italic", marginBottom:8 }}>No entries yet</div>
+          )}
+          <div style={{ display:"flex", gap:4, alignItems:"center" }}>
+            <input type="number" min={1} value={newAmt} onChange={(e) => setNewAmt(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && addEntry()}
+              placeholder="Amt" style={{ background:"#0d0b09", border:"1px solid #3a3020", borderRadius:3, color:"#c4a97d", fontFamily:"'Spectral', serif", fontSize:11, fontWeight:600, padding:"4px 6px", width:44, textAlign:"center", outline:"none" }} />
+            <select value={newType} onChange={(e) => setNewType(e.target.value)} style={{ background:"#1a1510", color:"#c4a97d", border:"1px solid #3a3020", borderRadius:4, padding:"4px 4px", fontSize:11, fontFamily:"'Spectral', serif", flex:1 }}>
+              <option value="">— Regular —</option>
+              {DMG_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+            </select>
+            <button onClick={addEntry} style={{ background:"#2a1e10", border:"1px solid #5c4a32", borderRadius:3, color:"#daa520", cursor:"pointer", fontSize:11, padding:"4px 8px" }}>Add</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ─── Data Entry ─── */
-function DataEntry({ battle, players, onChange, onRoundsChange }) {
+function DataEntry({ battle, players, onChange, onRoundsChange, onDmgChange, playerDefaults }) {
   const d = battle.data;
+  const dmgEntries = battle.dmgEntries || {};
   const setCellValue = (stat, player, round, val) => {
     const next = JSON.parse(JSON.stringify(d));
     next[player][stat][round] = Math.max(0, parseInt(val) || 0);
@@ -254,8 +348,12 @@ function DataEntry({ battle, players, onChange, onRoundsChange }) {
                       <td style={tdNameStyle}>{p}</td>
                       {roundNums.map((r) => (
                         <td key={r} style={{ ...tdStyle, textAlign:"center" }}>
-                          <input type="number" min={0} value={d[p]?.[stat]?.[r] || ""} placeholder="–"
-                            onChange={(e) => setCellValue(stat, p, r, e.target.value)} style={inputStyle} />
+                          {stat === "DMG" ? (
+                            <DmgCell entries={dmgEntries[p]?.[r] || []} defaultType={playerDefaults?.[p] || ""} onChange={(ent) => onDmgChange(p, r, ent)} />
+                          ) : (
+                            <input type="number" min={0} value={d[p]?.[stat]?.[r] || ""} placeholder="–"
+                              onChange={(e) => setCellValue(stat, p, r, e.target.value)} style={inputStyle} />
+                          )}
                         </td>
                       ))}
                       <td style={{ ...tdStyle, textAlign:"center" }}><StatBadge stat={stat} value={total} /></td>
@@ -342,6 +440,24 @@ function Dashboard({ battles, players, filterPlayer, filterBattle, filterRound, 
   const battleBreakdown = useMemo(() => {
     return battles.map((b) => { const row = { name:b.name, id:b.id }; STAT_TYPES.forEach((s) => { row[s] = 0; fp.forEach((p) => { if (!b.data[p]) return; for (let r = 1; r <= b.rounds; r++) { if (filterRound !== "All" && r !== filterRound) continue; row[s] += b.data[p]?.[s]?.[r] || 0; } }); }); return row; });
   }, [battles, fp, filterRound]);
+
+  const dmgTypeBreakdown = useMemo(() => {
+    const out = {};
+    const fb = filterBattle === "All" ? battles : battles.filter((b) => b.id === filterBattle);
+    fb.forEach((b) => {
+      fp.forEach((p) => {
+        for (let r = 1; r <= b.rounds; r++) {
+          if (filterRound !== "All" && r !== filterRound) continue;
+          (b.dmgEntries?.[p]?.[r] || []).forEach((e) => {
+            const key = e.type || "—";
+            out[key] = (out[key] || 0) + (e.amount || 0);
+          });
+        }
+      });
+    });
+    const order = [...DMG_TYPES, "—"];
+    return order.filter((t) => out[t] > 0).map((t) => ({ name: t, value: out[t], color: DMG_TYPE_COLORS[t] || "#8b7355" }));
+  }, [battles, fp, filterBattle, filterRound]);
 
   // Stacked horizontal bar: DMG per round by player (Image 2)
   const stackedDmgData = useMemo(() => {
@@ -570,6 +686,24 @@ function Dashboard({ battles, players, filterPlayer, filterBattle, filterRound, 
             </div>
           </div>
 
+          {/* ── Damage by type horizontal bar ── */}
+          {dmgTypeBreakdown.length > 0 && (
+            <ChartCard title="Damage by Type" height={Math.max(200, dmgTypeBreakdown.length * 30 + 80)} icon="🔥">
+              <ResponsiveContainer>
+                <BarChart layout="vertical" data={dmgTypeBreakdown} barCategoryGap="15%">
+                  <CartesianGrid strokeDasharray="3 3" stroke="#2a2018" />
+                  <XAxis type="number" tick={{ fill:"#5c4a32", fontSize:9 }} axisLine={{ stroke:"#3a3020" }} />
+                  <YAxis type="category" dataKey="name" tick={{ fill:"#8b7355", fontSize:9 }} axisLine={{ stroke:"#3a3020" }} width={80} />
+                  <Tooltip content={<ChartTooltip />} />
+                  <Bar dataKey="value" name="Damage" radius={[0,3,3,0]}>
+                    {dmgTypeBreakdown.map((d, i) => <Cell key={i} fill={d.color} />)}
+                    <LabelList dataKey="value" position="right" fill="#c4a97d" fontSize={9} />
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartCard>
+          )}
+
           {battles.length > 1 && (
             <ChartCard title="Campaign Arc — Stats Across Encounters" height={220} icon="📜">
               <ResponsiveContainer>
@@ -639,7 +773,7 @@ function Dashboard({ battles, players, filterPlayer, filterBattle, filterRound, 
 }
 
 /* ─── Settings ─── */
-function Settings({ players, setPlayers, onReset, onExport, onImport }) {
+function Settings({ players, setPlayers, onReset, onExport, onImport, playerDefaults, setPlayerDefaults }) {
   const [newName, setNewName] = useState("");
   const fileRef = useRef(null);
   const addPlayer = () => { const n = newName.trim(); if (n && !players.includes(n)) { setPlayers([...players, n]); setNewName(""); } };
@@ -647,6 +781,7 @@ function Settings({ players, setPlayers, onReset, onExport, onImport }) {
   return (
     <ParchmentPanel>
       <SectionTitle icon="👥">Party Members</SectionTitle>
+      <div style={{ fontSize:10, color:"#5c4a32", marginBottom:8, fontFamily:"'Spectral', serif", fontStyle:"italic" }}>Select each adventurer's default damage type for new entries.</div>
       <div style={{ display:"flex", flexDirection:"column", gap:6, marginBottom:14 }}>
         {players.map((p, i) => (
           <div key={p} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", background:"#1a1510", borderRadius:4, padding:"8px 12px", border:"1px solid #2a2018" }}>
@@ -654,7 +789,14 @@ function Settings({ players, setPlayers, onReset, onExport, onImport }) {
               <div style={{ width:12, height:12, borderRadius:2, background:PLAYER_COLORS[i % PLAYER_COLORS.length], boxShadow:`0 0 6px ${PLAYER_COLORS[i % PLAYER_COLORS.length]}44` }} />
               <span style={{ fontSize:14, color:"#c4a97d", fontFamily:"'Spectral', serif" }}>{p}</span>
             </div>
-            <button onClick={() => removePlayer(p)} style={{ background:"transparent", border:"none", color:"#5c3030", cursor:"pointer", fontSize:16, fontWeight:700, padding:"0 4px" }}>×</button>
+            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+              <select value={playerDefaults?.[p] || ""} onChange={(e) => setPlayerDefaults({ ...playerDefaults, [p]: e.target.value })}
+                style={{ background:"#0d0b09", color:"#8b7355", border:"1px solid #2a2018", borderRadius:3, padding:"2px 6px", fontSize:10, fontFamily:"'Spectral', serif", cursor:"pointer" }}>
+                <option value="">— Regular —</option>
+                {DMG_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
+              <button onClick={() => removePlayer(p)} style={{ background:"transparent", border:"none", color:"#5c3030", cursor:"pointer", fontSize:16, fontWeight:700, padding:"0 4px" }}>×</button>
+            </div>
           </div>
         ))}
       </div>
@@ -699,6 +841,7 @@ export default function App() {
   const [newBattleName, setNewBattleName] = useState("");
   const [showNewBattle, setShowNewBattle] = useState(false);
   const [syncStatus, setSyncStatus] = useState("idle"); // "saving" | "saved" | "error"
+  const [playerDefaults, setPlayerDefaults] = useState({}); // { [player]: default DMG type }
 
   // Wire the module-level save callback to this component's state setter.
   const setSyncRef = useRef(setSyncStatus);
@@ -706,10 +849,10 @@ export default function App() {
   useEffect(() => { _onSyncChange = (s) => setSyncRef.current(s); return () => { _onSyncChange = null; }; }, []);
 
   // Load state on mount.
-  useEffect(() => { loadState().then((s) => { if (s) { setPlayers(s.players || DEFAULT_PLAYERS); setBattles(s.battles || []); setActiveBattleIdx(s.activeBattleIdx || 0); } setLoaded(true); }); }, []);
+  useEffect(() => { loadState().then((s) => { if (s) { setPlayers(s.players || DEFAULT_PLAYERS); setBattles(s.battles || []); setActiveBattleIdx(s.activeBattleIdx || 0); setPlayerDefaults(s.playerDefaults || {}); } setLoaded(true); }); }, []);
 
   // Save whenever state changes (debounced in saveState for Supabase).
-  useEffect(() => { if (loaded) saveState({ players, battles, activeBattleIdx }); }, [players, battles, activeBattleIdx, loaded]);
+  useEffect(() => { if (loaded) saveState({ players, battles, activeBattleIdx, playerDefaults }); }, [players, battles, activeBattleIdx, playerDefaults, loaded]);
 
   // Subscribe to realtime changes from other users.
   useEffect(() => {
@@ -723,6 +866,7 @@ export default function App() {
         setPlayers(s.players || DEFAULT_PLAYERS);
         setBattles(s.battles || []);
         setActiveBattleIdx(s.activeBattleIdx ?? 0);
+        setPlayerDefaults(s.playerDefaults || {});
       })
       .subscribe();
     return () => supabase.removeChannel(channel);
@@ -732,20 +876,46 @@ export default function App() {
   const deleteBattle = (idx) => { const next = battles.filter((_, i) => i !== idx); setBattles(next); setActiveBattleIdx(Math.min(activeBattleIdx, Math.max(0, next.length - 1))); };
   const updateBattleData = (data) => setBattles((p) => p.map((b, i) => i === activeBattleIdx ? { ...b, data } : b));
   const updateBattleRounds = (rounds) => setBattles((p) => p.map((b, i) => i === activeBattleIdx ? { ...b, rounds } : b));
-  const handleSetPlayers = (np) => { setPlayers(np); setBattles((prev) => prev.map((b) => { const nd = { ...b.data }; np.forEach((p) => { if (!nd[p]) { nd[p] = {}; STAT_TYPES.forEach((s) => { nd[p][s] = {}; for (let r = 1; r <= MAX_ROUNDS; r++) nd[p][s][r] = 0; }); } }); return { ...b, data:nd }; })); };
-  const handleReset = () => { if (confirm("Obliterate all data? No resurrection!")) { setPlayers(DEFAULT_PLAYERS); setBattles([]); setActiveBattleIdx(0); setTab("entry"); } };
+  const handleSetPlayers = (np) => {
+    setPlayers(np);
+    setBattles((prev) => prev.map((b) => {
+      const nd = { ...b.data };
+      const nde = { ...(b.dmgEntries || {}) };
+      np.forEach((p) => {
+        if (!nd[p]) { nd[p] = {}; STAT_TYPES.forEach((s) => { nd[p][s] = {}; for (let r = 1; r <= MAX_ROUNDS; r++) nd[p][s][r] = 0; }); }
+        if (!nde[p]) { nde[p] = {}; for (let r = 1; r <= MAX_ROUNDS; r++) nde[p][r] = []; }
+      });
+      return { ...b, data:nd, dmgEntries:nde };
+    }));
+  };
+  const updateDmgCell = (player, round, entries) => {
+    const total = entries.reduce((a, e) => a + (e.amount || 0), 0);
+    setBattles((prev) => prev.map((b, i) => {
+      if (i !== activeBattleIdx) return b;
+      const nextData = JSON.parse(JSON.stringify(b.data));
+      nextData[player]["DMG"][round] = total;
+      const nextDmgEntries = JSON.parse(JSON.stringify(b.dmgEntries || {}));
+      if (!nextDmgEntries[player]) nextDmgEntries[player] = {};
+      nextDmgEntries[player][round] = entries;
+      return { ...b, data:nextData, dmgEntries:nextDmgEntries };
+    }));
+  };
+
+  const handleReset = () => { if (confirm("Obliterate all data? No resurrection!")) { setPlayers(DEFAULT_PLAYERS); setBattles([]); setActiveBattleIdx(0); setPlayerDefaults({}); setTab("entry"); } };
 
   const handleExport = () => {
     const escape = (v) => `"${String(v).replace(/"/g, '""')}"`;
-    const header = ["Encounter", "Round", "Player", ...STAT_TYPES];
+    const dmgTypeCols = DMG_TYPES.map((t) => `DMG:${t}`);
+    const header = ["Encounter", "Round", "Player", ...STAT_TYPES, ...dmgTypeCols];
     const rows = [header.map(escape).join(",")];
-    // metadata row so players order and encounter ids survive a round-trip
     rows.push(["#players", ...players].map(escape).join(","));
     battles.forEach((b) => {
       for (let r = 1; r <= b.rounds; r++) {
         players.forEach((p) => {
-          const vals = STAT_TYPES.map((s) => b.data[p]?.[s]?.[r] ?? 0);
-          rows.push([escape(b.name), r, escape(p), ...vals].join(","));
+          const statVals = STAT_TYPES.map((s) => b.data[p]?.[s]?.[r] ?? 0);
+          const typeVals = DMG_TYPES.map((t) => (b.dmgEntries?.[p]?.[r] || []).filter((e) => e.type === t).reduce((a, e) => a + (e.amount || 0), 0));
+          // also capture untyped entries
+          rows.push([escape(b.name), r, escape(p), ...statVals, ...typeVals].join(","));
         });
       }
     });
@@ -766,36 +936,42 @@ export default function App() {
         // first non-empty line is the header
         const parseRow = (line) => line.match(/("(?:[^"]|"")*"|[^,]*)/g).filter((_, i) => i % 2 === 0).map((v) => v.startsWith('"') ? v.slice(1, -1).replace(/""/g, '"') : v);
         const header = parseRow(lines[0]);
-        const statCols = header.slice(3); // after Encounter, Round, Player
         if (header[0] !== "Encounter") throw new Error();
+        const statColIdxs = STAT_TYPES.map((s) => header.indexOf(s));
+        const dmgTypeColIdxs = DMG_TYPES.map((t) => header.indexOf(`DMG:${t}`));
 
         let importedPlayers = null;
-        const battleMap = new Map(); // name -> { name, rounds, data }
+        const battleMap = new Map();
 
         for (let i = 1; i < lines.length; i++) {
           const row = parseRow(lines[i]);
-          if (row[0] === "#players") {
-            importedPlayers = row.slice(1).filter(Boolean);
-            continue;
-          }
-          const [enc, roundStr, player, ...statVals] = row;
+          if (row[0] === "#players") { importedPlayers = row.slice(1).filter(Boolean); continue; }
+          const enc = row[0], roundStr = row[1], player = row[2];
           const round = parseInt(roundStr, 10);
           if (!enc || isNaN(round) || !player) continue;
           if (!battleMap.has(enc)) {
             const data = {};
+            const dmgEntries = {};
             (importedPlayers || [player]).forEach((p) => {
               data[p] = {};
               STAT_TYPES.forEach((s) => { data[p][s] = {}; for (let r = 1; r <= MAX_ROUNDS; r++) data[p][s][r] = 0; });
+              dmgEntries[p] = {};
+              for (let r = 1; r <= MAX_ROUNDS; r++) dmgEntries[p][r] = [];
             });
-            battleMap.set(enc, { id: generateId(), name: enc, rounds: 1, data });
+            battleMap.set(enc, { id: generateId(), name: enc, rounds: 1, data, dmgEntries });
           }
           const b = battleMap.get(enc);
           b.rounds = Math.max(b.rounds, round);
           if (!b.data[player]) {
             b.data[player] = {};
             STAT_TYPES.forEach((s) => { b.data[player][s] = {}; for (let r = 1; r <= MAX_ROUNDS; r++) b.data[player][s][r] = 0; });
+            b.dmgEntries[player] = {};
+            for (let r = 1; r <= MAX_ROUNDS; r++) b.dmgEntries[player][r] = [];
           }
-          statCols.forEach((s, idx) => { if (STAT_TYPES.includes(s)) b.data[player][s][round] = Number(statVals[idx]) || 0; });
+          STAT_TYPES.forEach((s, si) => { if (statColIdxs[si] >= 0) b.data[player][s][round] = Number(row[statColIdxs[si]]) || 0; });
+          // reconstruct dmgEntries from per-type columns (one entry per type)
+          const typeEntries = DMG_TYPES.map((t, ti) => dmgTypeColIdxs[ti] >= 0 ? { type: t, amount: Number(row[dmgTypeColIdxs[ti]]) || 0 } : null).filter((e) => e && e.amount > 0);
+          if (typeEntries.length > 0) b.dmgEntries[player][round] = typeEntries;
         }
 
         const newBattles = [...battleMap.values()];
@@ -803,6 +979,7 @@ export default function App() {
         setPlayers(importedPlayers || players);
         setBattles(newBattles);
         setActiveBattleIdx(0);
+        setPlayerDefaults({});
         setTab("entry");
       } catch {
         alert("Could not read that file — make sure it's a Mordekai CSV backup.");
@@ -887,7 +1064,7 @@ export default function App() {
             )}
           </div>
           {activeBattle ? (
-            <DataEntry battle={activeBattle} players={players} onChange={updateBattleData} onRoundsChange={updateBattleRounds} />
+            <DataEntry battle={activeBattle} players={players} onChange={updateBattleData} onRoundsChange={updateBattleRounds} onDmgChange={updateDmgCell} playerDefaults={playerDefaults} />
           ) : (
             <ParchmentPanel style={{ textAlign:"center", padding:40 }}>
               <D20Icon size={48} color="#3a3020" />
@@ -906,7 +1083,7 @@ export default function App() {
               setFilterPlayer={setFilterPlayer} setFilterBattle={setFilterBattle} setFilterRound={setFilterRound} />
       )}
 
-      {tab === "settings" && <Settings players={players} setPlayers={handleSetPlayers} onReset={handleReset} onExport={handleExport} onImport={handleImport} />}
+      {tab === "settings" && <Settings players={players} setPlayers={handleSetPlayers} onReset={handleReset} onExport={handleExport} onImport={handleImport} playerDefaults={playerDefaults} setPlayerDefaults={setPlayerDefaults} />}
 
       {/* Footer */}
       <div style={{ textAlign:"center", marginTop:30, paddingTop:14, borderTop:"1px solid #1a1510" }}>
