@@ -229,6 +229,30 @@ function ParchmentPanel({ children, style: extraStyle }) {
   );
 }
 
+/* ─── Stepper ─── */
+function Stepper({ value, min = 0, onChange }) {
+  const canDec = value > min;
+  const btn = {
+    background: "#16120c", border: "1px solid #3a3020", borderRadius: 3,
+    fontSize: 14, fontWeight: 700, width: 18, height: 20, padding: 0,
+    lineHeight: "18px", textAlign: "center",
+    fontFamily: "'Spectral', serif", flexShrink: 0,
+    display: "inline-flex", alignItems: "center", justifyContent: "center",
+    userSelect: "none",
+  };
+  return (
+    <div style={{ display:"inline-flex", alignItems:"center", gap:2 }}>
+      <button onClick={() => canDec && onChange(value - 1)}
+        style={{ ...btn, color: canDec ? "#c4a97d" : "#2a2018", cursor: canDec ? "pointer" : "default" }}>−</button>
+      <span style={{ minWidth:20, textAlign:"center", fontSize:12, fontWeight:700,
+        color: value > 0 ? "#c4a97d" : "#3a3020", fontFamily:"'Spectral', serif",
+        userSelect:"none", display:"inline-block" }}>{value > 0 ? value : "–"}</span>
+      <button onClick={() => onChange(value + 1)}
+        style={{ ...btn, color:"#c4a97d", cursor:"pointer" }}>+</button>
+    </div>
+  );
+}
+
 /* ─── Kill Cell ─── */
 function KillCell({ value, namedKills, onUpdate }) {
   const [open, setOpen] = useState(false);
@@ -271,9 +295,7 @@ function KillCell({ value, namedKills, onUpdate }) {
 
   return (
     <div ref={ref} style={{ position:"relative", display:"inline-flex", alignItems:"center", gap:3, justifyContent:"center" }}>
-      <input type="number" min={namedCount} value={value || ""} placeholder="–"
-        onChange={(e) => onUpdate(Math.max(namedCount, parseInt(e.target.value) || 0), namedKills)}
-        style={{ ...inputStyle, width: namedCount > 0 ? 34 : 46 }} />
+      <Stepper value={value} min={namedCount} onChange={(v) => onUpdate(v, namedKills)} />
 
       {/* Gold badge showing named kill count */}
       {namedCount > 0 && (
@@ -442,7 +464,7 @@ function DataEntry({ battle, players, onChange, onRoundsChange, onDmgChange, onK
               <thead>
                 <tr>
                   <th style={thStyle}>Adventurer</th>
-                  {roundNums.map((r) => <th key={r} style={{ ...thStyle, textAlign:"center", minWidth:52 }}>R{r}</th>)}
+                  {roundNums.map((r) => <th key={r} style={{ ...thStyle, textAlign:"center", minWidth:64 }}>R{r}</th>)}
                   <th style={{ ...thStyle, textAlign:"center", color:STAT_COLORS[stat] }}>Total</th>
                 </tr>
               </thead>
@@ -459,8 +481,7 @@ function DataEntry({ battle, players, onChange, onRoundsChange, onDmgChange, onK
                           ) : stat === "KILL" ? (
                             <KillCell value={d[p]?.["KILL"]?.[r] || 0} namedKills={namedKillsData[p]?.[r] || []} onUpdate={(val, kills) => onKillChange(p, r, val, kills)} />
                           ) : (
-                            <input type="number" min={0} value={d[p]?.[stat]?.[r] || ""} placeholder="–"
-                              onChange={(e) => setCellValue(stat, p, r, e.target.value)} style={inputStyle} />
+                            <Stepper value={d[p]?.[stat]?.[r] || 0} onChange={(v) => setCellValue(stat, p, r, v)} />
                           )}
                         </td>
                       ))}
