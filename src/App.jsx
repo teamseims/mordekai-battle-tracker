@@ -27,15 +27,17 @@ const CLIENT_ID = generateId();
 function createEmptyBattle(name, players) {
   const data = {};
   const dmgEntries = {};
+  const dmgBase = {};
   const namedKills = {};
   players.forEach((p) => {
     data[p] = {};
     STAT_TYPES.forEach((s) => { data[p][s] = {}; for (let r = 1; r <= MAX_ROUNDS; r++) data[p][s][r] = 0; });
     dmgEntries[p] = {};
+    dmgBase[p] = {};
     namedKills[p] = {};
-    for (let r = 1; r <= MAX_ROUNDS; r++) { dmgEntries[p][r] = []; namedKills[p][r] = []; }
+    for (let r = 1; r <= MAX_ROUNDS; r++) { dmgEntries[p][r] = []; dmgBase[p][r] = 0; namedKills[p][r] = []; }
   });
-  return { id: generateId(), name, rounds: 1, data, dmgEntries, namedKills };
+  return { id: generateId(), name, rounds: 1, data, dmgEntries, dmgBase, namedKills };
 }
 
 /* ─── Persistence (Supabase when configured, localStorage otherwise) ─── */
@@ -355,16 +357,18 @@ function KillCell({ value, namedKills, onUpdate }) {
 }
 
 /* ─── Damage Cell ─── */
-function DmgCell({ entries, defaultType, onChange }) {
+function DmgCell({ base, typedEntries, defaultType, onUpdate }) {
   const [open, setOpen] = useState(false);
   const [tooltipVisible, setTooltipVisible] = useState(false);
-  const [newAmt, setNewAmt] = useState("");
+  const [newAmt, setNewAmt] = useState(1);
   const [newType, setNewType] = useState(defaultType || DMG_TYPES[0]);
   const ref = useRef(null);
   const panelRef = useRef(null);
   const [pos, setPos] = useState({ top: 0, left: 0 });
 
-  const total = entries.reduce((a, e) => a + (e.amount || 0), 0);
+  const typedTotal = typedEntries.reduce((a, e) => a + (e.amount || 0), 0);
+  const total = base + typedTotal;
+  const hasTyped = typedEntries.length > 0;
 
   useEffect(() => {
     if (!open) return;
@@ -379,59 +383,92 @@ function DmgCell({ entries, defaultType, onChange }) {
 
   const getRect = () => {
     const r = ref.current.getBoundingClientRect();
-    return { top: r.bottom + 4, left: Math.min(r.left, window.innerWidth - 224) };
+    return { top: r.bottom + 4, left: Math.min(r.left, window.innerWidth - 248) };
   };
 
   const openPanel = () => { setPos(getRect()); setNewType(defaultType || DMG_TYPES[0]); setTooltipVisible(false); setOpen(true); };
-  const addEntry = () => { const amt = parseInt(newAmt); if (!amt || amt <= 0) return; onChange([...entries, { amount: amt, type: newType }]); setNewAmt(""); };
-  const removeEntry = (i) => onChange(entries.filter((_, idx) => idx !== i));
+  const updTyped = (next) => onUpdate(base, next);
+  const addTyped = () => { if (newAmt <= 0) return; updTyped([...typedEntries, { amount: newAmt, type: newType }]); setNewAmt(1); };
+  const removeTyped = (i) => updTyped(typedEntries.filter((_, j) => j !== i));
+  const updateTypedAmt = (i, v) => updTyped(typedEntries.map((e, j) => j === i ? { ...e, amount: v } : e));
+
+  const dmgRed = "#d4442a";
+  const stepBtn = { background:"#16120c", border:"1px solid #3a3020", borderRadius:3, fontSize:14, fontWeight:700, width:18, height:20, padding:0, lineHeight:"18px", textAlign:"center", fontFamily:"'Spectral', serif", flexShrink:0, display:"inline-flex", alignItems:"center", justifyContent:"center", userSelect:"none" };
 
   return (
-    <div ref={ref} style={{ position:"relative", display:"inline-flex", alignItems:"center", gap:3, justifyContent:"center" }}>
-      <span
-        onMouseEnter={() => { if (!open && entries.length > 0) { setPos(getRect()); setTooltipVisible(true); } }}
+    <div ref={ref} style={{ position:"relative", display:"inline-flex", alignItems:"center", gap:2 }}>
+      {/* Stepper — shows total, ± controls base untyped damage */}
+      <button onClick={() => base > 0 && onUpdate(base - 1, typedEntries)}
+        style={{ ...stepBtn, color: base > 0 ? dmgRed : "#2a2018", cursor: base > 0 ? "pointer" : "default" }}>−</button>
+      <span style={{ minWidth:20, textAlign:"center", fontSize:12, fontWeight:700, color: total > 0 ? dmgRed : "#3a3020", fontFamily:"'Spectral', serif", userSelect:"none", display:"inline-block" }}>
+        {total > 0 ? total : "–"}
+      </span>
+      <button onClick={() => onUpdate(base + 1, typedEntries)}
+        style={{ ...stepBtn, color: dmgRed, cursor:"pointer" }}>+</button>
+
+      {/* Flame button — opens typed breakdown panel */}
+      <button onClick={openPanel}
+        onMouseEnter={() => { if (!open && (hasTyped || base > 0)) { setPos(getRect()); setTooltipVisible(true); } }}
         onMouseLeave={() => setTooltipVisible(false)}
-        style={{ fontSize:12, fontWeight:700, color: total > 0 ? "#d4442a" : "#3a3020", minWidth:18, display:"inline-block", textAlign:"center" }}
-      >{total || "–"}</span>
-      <button onClick={openPanel} style={{ background:"#2a1e10", border:"1px solid #3a3020", borderRadius:3, color:"#8b7355", cursor:"pointer", fontSize:10, fontWeight:700, padding:"0px 4px", lineHeight:"14px" }}>+</button>
+        title="Typed damage breakdown"
+        style={{ background: hasTyped ? "#140e00" : "#16120c", border:`1px solid ${hasTyped ? "#4a3200" : "#2a2018"}`, borderRadius:3, color: hasTyped ? "#daa520" : "#3a3020", cursor:"pointer", fontSize:11, width:17, height:20, padding:0, display:"inline-flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>🔥</button>
 
       {/* Hover breakdown tooltip */}
-      {tooltipVisible && !open && entries.length > 0 && (
+      {tooltipVisible && !open && (hasTyped || base > 0) && (
         <div style={{ position:"fixed", top:pos.top, left:pos.left, zIndex:200, background:"#1a1510", border:"1px solid #5c4a32", borderRadius:4, padding:"6px 10px", fontSize:11, fontFamily:"'Spectral', serif", pointerEvents:"none", whiteSpace:"nowrap", boxShadow:"0 4px 16px rgba(0,0,0,0.6)" }}>
-          {entries.map((e, i) => (
-            <div key={i} style={{ display:"flex", gap:8, alignItems:"center", color: DMG_TYPE_COLORS[e.type] || "#c4a97d" }}>
+          {base > 0 && <div style={{ color:"#8b7355", display:"flex", gap:8 }}><span style={{ fontWeight:700 }}>{base}</span><span>Untyped</span></div>}
+          {typedEntries.map((e, i) => (
+            <div key={i} style={{ color: DMG_TYPE_COLORS[e.type] || "#c4a97d", display:"flex", gap:8 }}>
               <span style={{ fontWeight:700 }}>{e.amount}</span><span>{e.type || "—"}</span>
             </div>
           ))}
+          {hasTyped && <div style={{ borderTop:"1px solid #2a2018", marginTop:4, paddingTop:3, color:dmgRed, fontWeight:700, fontSize:10 }}>Total: {total}</div>}
         </div>
       )}
 
-      {/* Entry panel */}
+      {/* Typed entries panel */}
       {open && (
-        <div ref={panelRef} style={{ position:"fixed", top:pos.top, left:pos.left, zIndex:300, background:"#1a1510", border:"1px solid #5c4a32", borderRadius:6, padding:"10px 12px", minWidth:212, boxShadow:"0 8px 32px rgba(0,0,0,0.7)", fontFamily:"'Spectral', serif" }}>
-          <div style={{ fontSize:10, color:"#daa520", fontFamily:"'MedievalSharp', cursive", marginBottom:8, letterSpacing:1 }}>Damage Entries</div>
-          {entries.length > 0 ? (
+        <div ref={panelRef} style={{ position:"fixed", top:pos.top, left:pos.left, zIndex:300, background:"#1a1510", border:"1px solid #5c4a32", borderRadius:6, padding:"10px 12px", minWidth:248, boxShadow:"0 8px 32px rgba(0,0,0,0.7)", fontFamily:"'Spectral', serif" }}>
+          <div style={{ fontSize:10, color:"#daa520", fontFamily:"'MedievalSharp', cursive", marginBottom:8, letterSpacing:1 }}>Typed Damage Breakdown</div>
+
+          {/* Base (read-only info row) */}
+          <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6, padding:"3px 8px", background:"#0d0b09", borderRadius:3 }}>
+            <span style={{ fontSize:11, color:"#5c4a32", flex:1 }}>Base (untyped)</span>
+            <span style={{ fontSize:12, fontWeight:700, color: base > 0 ? "#8b7355" : "#3a3020" }}>{base || "—"}</span>
+          </div>
+
+          {/* Existing typed entries */}
+          {typedEntries.length > 0 ? (
             <div style={{ display:"flex", flexDirection:"column", gap:4, marginBottom:8 }}>
-              {entries.map((e, i) => (
-                <div key={i} style={{ display:"flex", alignItems:"center", gap:6, background:"#0d0b09", borderRadius:3, padding:"3px 6px" }}>
-                  <span style={{ fontWeight:700, color: DMG_TYPE_COLORS[e.type] || "#c4a97d", minWidth:24 }}>{e.amount}</span>
-                  <span style={{ color:"#8b7355", fontSize:11, flex:1 }}>{e.type || "—"}</span>
-                  <button onClick={() => removeEntry(i)} style={{ background:"transparent", border:"none", color:"#5c3030", cursor:"pointer", fontSize:13, fontWeight:700, padding:"0 2px", lineHeight:1 }}>×</button>
+              {typedEntries.map((e, i) => (
+                <div key={i} style={{ display:"flex", alignItems:"center", gap:5, background:"#0d0b09", borderRadius:3, padding:"3px 6px" }}>
+                  <Stepper value={e.amount} min={1} onChange={(v) => updateTypedAmt(i, v)} />
+                  <span style={{ color: DMG_TYPE_COLORS[e.type] || "#c4a97d", fontSize:11, flex:1, paddingLeft:2 }}>{e.type || "—"}</span>
+                  <button onClick={() => removeTyped(i)} style={{ background:"transparent", border:"none", color:"#5c3030", cursor:"pointer", fontSize:13, fontWeight:700, padding:"0 2px", lineHeight:1 }}>×</button>
                 </div>
               ))}
             </div>
           ) : (
-            <div style={{ fontSize:11, color:"#3a3020", fontStyle:"italic", marginBottom:8 }}>No entries yet</div>
+            <div style={{ fontSize:11, color:"#3a3020", fontStyle:"italic", marginBottom:8 }}>No typed entries yet</div>
           )}
-          <div style={{ display:"flex", gap:4, alignItems:"center" }}>
-            <input type="number" min={1} value={newAmt} onChange={(e) => setNewAmt(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && addEntry()}
-              placeholder="Amt" style={{ background:"#0d0b09", border:"1px solid #3a3020", borderRadius:3, color:"#c4a97d", fontFamily:"'Spectral', serif", fontSize:11, fontWeight:600, padding:"4px 6px", width:44, textAlign:"center", outline:"none" }} />
-            <select value={newType} onChange={(e) => setNewType(e.target.value)} style={{ background:"#1a1510", color:"#c4a97d", border:"1px solid #3a3020", borderRadius:4, padding:"4px 4px", fontSize:11, fontFamily:"'Spectral', serif", flex:1 }}>
-              <option value="">— Regular —</option>
+
+          {/* Add new typed entry */}
+          <div style={{ display:"flex", gap:4, alignItems:"center", marginBottom:8 }}>
+            <Stepper value={newAmt} min={1} onChange={setNewAmt} />
+            <select value={newType} onChange={(e) => setNewType(e.target.value)}
+              style={{ background:"#1a1510", color:"#c4a97d", border:"1px solid #3a3020", borderRadius:4, padding:"3px 4px", fontSize:10, fontFamily:"'Spectral', serif", flex:1 }}>
               {DMG_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
             </select>
-            <button onClick={addEntry} style={{ background:"#2a1e10", border:"1px solid #5c4a32", borderRadius:3, color:"#daa520", cursor:"pointer", fontSize:11, padding:"4px 8px" }}>Add</button>
+            <button onClick={addTyped} style={{ background:"#1a1208", border:"1px solid #5c4a32", borderRadius:3, color:"#daa520", cursor:"pointer", fontSize:10, padding:"3px 7px" }}>Add</button>
+          </div>
+
+          {/* Summary footer */}
+          <div style={{ borderTop:"1px solid #2a2018", paddingTop:6, display:"flex", gap:8, fontSize:10, color:"#5c4a32" }}>
+            <span>Base: <b style={{ color:"#8b7355" }}>{base}</b></span>
+            <span style={{ color:"#2a2018" }}>·</span>
+            <span>Typed: <b style={{ color:"#c4a97d" }}>{typedTotal}</b></span>
+            <span style={{ color:"#2a2018" }}>·</span>
+            <span>Total: <b style={{ color:dmgRed }}>{total}</b></span>
           </div>
         </div>
       )}
@@ -443,6 +480,7 @@ function DmgCell({ entries, defaultType, onChange }) {
 function DataEntry({ battle, players, onChange, onRoundsChange, onDmgChange, onKillChange, playerDefaults }) {
   const d = battle.data;
   const dmgEntries = battle.dmgEntries || {};
+  const dmgBase = battle.dmgBase || {};
   const namedKillsData = battle.namedKills || {};
   const setCellValue = (stat, player, round, val) => {
     const next = JSON.parse(JSON.stringify(d));
@@ -477,7 +515,7 @@ function DataEntry({ battle, players, onChange, onRoundsChange, onDmgChange, onK
                       {roundNums.map((r) => (
                         <td key={r} style={{ ...tdStyle, textAlign:"center" }}>
                           {stat === "DMG" ? (
-                            <DmgCell entries={dmgEntries[p]?.[r] || []} defaultType={playerDefaults?.[p] || ""} onChange={(ent) => onDmgChange(p, r, ent)} />
+                            <DmgCell base={dmgBase[p]?.[r] || 0} typedEntries={dmgEntries[p]?.[r] || []} defaultType={playerDefaults?.[p] || DMG_TYPES[0]} onUpdate={(b, t) => onDmgChange(p, r, b, t)} />
                           ) : stat === "KILL" ? (
                             <KillCell value={d[p]?.["KILL"]?.[r] || 0} namedKills={namedKillsData[p]?.[r] || []} onUpdate={(val, kills) => onKillChange(p, r, val, kills)} />
                           ) : (
@@ -577,15 +615,18 @@ function Dashboard({ battles, players, filterPlayer, filterBattle, filterRound, 
       fp.forEach((p) => {
         for (let r = 1; r <= b.rounds; r++) {
           if (filterRound !== "All" && r !== filterRound) continue;
+          const base = b.dmgBase?.[p]?.[r] || 0;
+          if (base > 0) out["Untyped"] = (out["Untyped"] || 0) + base;
           (b.dmgEntries?.[p]?.[r] || []).forEach((e) => {
-            const key = e.type || "—";
+            const key = e.type || "Untyped";
             out[key] = (out[key] || 0) + (e.amount || 0);
           });
         }
       });
     });
-    const order = [...DMG_TYPES, "—"];
-    return order.filter((t) => out[t] > 0).map((t) => ({ name: t, value: out[t], color: DMG_TYPE_COLORS[t] || "#8b7355" }));
+    const order = [...DMG_TYPES, "Untyped"];
+    const colors = { ...DMG_TYPE_COLORS, Untyped:"#5c5550" };
+    return order.filter((t) => out[t] > 0).map((t) => ({ name: t, value: out[t], color: colors[t] || "#8b7355" }));
   }, [battles, fp, filterBattle, filterRound]);
 
   const trophyWall = useMemo(() => {
@@ -1054,13 +1095,15 @@ export default function App() {
     setBattles((prev) => prev.map((b) => {
       const nd = { ...b.data };
       const nde = { ...(b.dmgEntries || {}) };
+      const ndb = { ...(b.dmgBase || {}) };
       const nnk = { ...(b.namedKills || {}) };
       np.forEach((p) => {
         if (!nd[p]) { nd[p] = {}; STAT_TYPES.forEach((s) => { nd[p][s] = {}; for (let r = 1; r <= MAX_ROUNDS; r++) nd[p][s][r] = 0; }); }
         if (!nde[p]) { nde[p] = {}; for (let r = 1; r <= MAX_ROUNDS; r++) nde[p][r] = []; }
+        if (!ndb[p]) { ndb[p] = {}; for (let r = 1; r <= MAX_ROUNDS; r++) ndb[p][r] = 0; }
         if (!nnk[p]) { nnk[p] = {}; for (let r = 1; r <= MAX_ROUNDS; r++) nnk[p][r] = []; }
       });
-      return { ...b, data:nd, dmgEntries:nde, namedKills:nnk };
+      return { ...b, data:nd, dmgEntries:nde, dmgBase:ndb, namedKills:nnk };
     }));
   };
   const updateKillCell = (player, round, total, namedKillsList) => {
@@ -1075,16 +1118,19 @@ export default function App() {
     }));
   };
 
-  const updateDmgCell = (player, round, entries) => {
-    const total = entries.reduce((a, e) => a + (e.amount || 0), 0);
+  const updateDmgCell = (player, round, base, typedEntries) => {
+    const total = base + typedEntries.reduce((a, e) => a + (e.amount || 0), 0);
     setBattles((prev) => prev.map((b, i) => {
       if (i !== activeBattleIdx) return b;
       const nextData = JSON.parse(JSON.stringify(b.data));
       nextData[player]["DMG"][round] = total;
+      const nextDmgBase = JSON.parse(JSON.stringify(b.dmgBase || {}));
+      if (!nextDmgBase[player]) nextDmgBase[player] = {};
+      nextDmgBase[player][round] = base;
       const nextDmgEntries = JSON.parse(JSON.stringify(b.dmgEntries || {}));
       if (!nextDmgEntries[player]) nextDmgEntries[player] = {};
-      nextDmgEntries[player][round] = entries;
-      return { ...b, data:nextData, dmgEntries:nextDmgEntries };
+      nextDmgEntries[player][round] = typedEntries;
+      return { ...b, data:nextData, dmgBase:nextDmgBase, dmgEntries:nextDmgEntries };
     }));
   };
 
@@ -1093,16 +1139,17 @@ export default function App() {
   const handleExport = () => {
     const escape = (v) => `"${String(v).replace(/"/g, '""')}"`;
     const dmgTypeCols = DMG_TYPES.map((t) => `DMG:${t}`);
-    const header = ["Encounter", "Round", "Player", ...STAT_TYPES, ...dmgTypeCols, "KILL:Named"];
+    const header = ["Encounter", "Round", "Player", ...STAT_TYPES, "DMG:Base", ...dmgTypeCols, "KILL:Named"];
     const rows = [header.map(escape).join(",")];
     rows.push(["#players", ...players].map(escape).join(","));
     battles.forEach((b) => {
       for (let r = 1; r <= b.rounds; r++) {
         players.forEach((p) => {
           const statVals = STAT_TYPES.map((s) => b.data[p]?.[s]?.[r] ?? 0);
+          const baseVal = b.dmgBase?.[p]?.[r] ?? 0;
           const typeVals = DMG_TYPES.map((t) => (b.dmgEntries?.[p]?.[r] || []).filter((e) => e.type === t).reduce((a, e) => a + (e.amount || 0), 0));
           const namedKillStr = (b.namedKills?.[p]?.[r] || []).map((k) => k.name.replace(/\|/g, "\\|")).join("|");
-          rows.push([escape(b.name), r, escape(p), ...statVals, ...typeVals, escape(namedKillStr)].join(","));
+          rows.push([escape(b.name), r, escape(p), ...statVals, baseVal, ...typeVals, escape(namedKillStr)].join(","));
         });
       }
     });
@@ -1125,6 +1172,7 @@ export default function App() {
         const header = parseRow(lines[0]);
         if (header[0] !== "Encounter") throw new Error();
         const statColIdxs = STAT_TYPES.map((s) => header.indexOf(s));
+        const dmgBaseColIdx = header.indexOf("DMG:Base");
         const dmgTypeColIdxs = DMG_TYPES.map((t) => header.indexOf(`DMG:${t}`));
         const namedKillColIdx = header.indexOf("KILL:Named");
 
@@ -1140,15 +1188,17 @@ export default function App() {
           if (!battleMap.has(enc)) {
             const data = {};
             const dmgEntries = {};
+            const dmgBase = {};
             const namedKills = {};
             (importedPlayers || [player]).forEach((p) => {
               data[p] = {};
               STAT_TYPES.forEach((s) => { data[p][s] = {}; for (let r = 1; r <= MAX_ROUNDS; r++) data[p][s][r] = 0; });
               dmgEntries[p] = {};
+              dmgBase[p] = {};
               namedKills[p] = {};
-              for (let r = 1; r <= MAX_ROUNDS; r++) { dmgEntries[p][r] = []; namedKills[p][r] = []; }
+              for (let r = 1; r <= MAX_ROUNDS; r++) { dmgEntries[p][r] = []; dmgBase[p][r] = 0; namedKills[p][r] = []; }
             });
-            battleMap.set(enc, { id: generateId(), name: enc, rounds: 1, data, dmgEntries, namedKills });
+            battleMap.set(enc, { id: generateId(), name: enc, rounds: 1, data, dmgEntries, dmgBase, namedKills });
           }
           const b = battleMap.get(enc);
           b.rounds = Math.max(b.rounds, round);
@@ -1156,10 +1206,13 @@ export default function App() {
             b.data[player] = {};
             STAT_TYPES.forEach((s) => { b.data[player][s] = {}; for (let r = 1; r <= MAX_ROUNDS; r++) b.data[player][s][r] = 0; });
             b.dmgEntries[player] = {};
+            b.dmgBase[player] = {};
             b.namedKills[player] = {};
-            for (let r = 1; r <= MAX_ROUNDS; r++) { b.dmgEntries[player][r] = []; b.namedKills[player][r] = []; }
+            for (let r = 1; r <= MAX_ROUNDS; r++) { b.dmgEntries[player][r] = []; b.dmgBase[player][r] = 0; b.namedKills[player][r] = []; }
           }
           STAT_TYPES.forEach((s, si) => { if (statColIdxs[si] >= 0) b.data[player][s][round] = Number(row[statColIdxs[si]]) || 0; });
+          // reconstruct dmgBase from DMG:Base column
+          if (dmgBaseColIdx >= 0) b.dmgBase[player][round] = Number(row[dmgBaseColIdx]) || 0;
           // reconstruct dmgEntries from per-type columns (one entry per type)
           const typeEntries = DMG_TYPES.map((t, ti) => dmgTypeColIdxs[ti] >= 0 ? { type: t, amount: Number(row[dmgTypeColIdxs[ti]]) || 0 } : null).filter((e) => e && e.amount > 0);
           if (typeEntries.length > 0) b.dmgEntries[player][round] = typeEntries;
