@@ -914,11 +914,11 @@ function Dashboard({ battles, players, filterPlayer, filterBattle, filterRound, 
       <SectionTitle icon="👥">By Adventurer</SectionTitle>
       <ParchmentPanel style={{ marginBottom:16 }}>
         <div style={{ overflowX:"auto" }}>
-          <table style={tableStyle}>
-            <thead><tr><th style={thStyle}>Hero</th>{STAT_TYPES.map((s) => <th key={s} style={{ ...thStyle, textAlign:"center", color:STAT_COLORS[s] }}>{STAT_ICONS[s]} {s}</th>)}</tr></thead>
+          <table style={summaryTableStyle}>
+            <thead><tr><th style={{ ...thStyle, width:"220px" }}>Hero</th>{STAT_TYPES.map((s) => <th key={s} style={{ ...thStyle, textAlign:"center", color:STAT_COLORS[s] }}>{STAT_ICONS[s]} {s}</th>)}</tr></thead>
             <tbody>
-              {fp.map((p) => (<tr key={p}><td style={tdNameStyle}>{p}</td>{STAT_TYPES.map((s) => <td key={s} style={{ ...tdStyle, textAlign:"center" }}><StatBadge stat={s} value={stats[p][s]} small /></td>)}</tr>))}
-              {fp.length > 1 && (<tr><td style={{ ...tdNameStyle, color:"#8b7355", fontStyle:"italic" }}>Party</td>{STAT_TYPES.map((s) => <td key={s} style={{ ...tdStyle, textAlign:"center" }}><StatBadge stat={s} value={totals[s]} small /></td>)}</tr>)}
+              {fp.map((p) => (<tr key={p}><td style={{ ...tdNameStyle, overflow:"hidden", textOverflow:"ellipsis" }}>{p}</td>{STAT_TYPES.map((s) => <td key={s} style={{ ...tdStyle, textAlign:"center" }}><StatBadge stat={s} value={stats[p][s]} small /></td>)}</tr>))}
+              {fp.length > 1 && (<tr><td style={{ ...tdNameStyle, color:"#8b7355", fontStyle:"italic", overflow:"hidden", textOverflow:"ellipsis" }}>Party</td>{STAT_TYPES.map((s) => <td key={s} style={{ ...tdStyle, textAlign:"center" }}><StatBadge stat={s} value={totals[s]} small /></td>)}</tr>)}
             </tbody>
           </table>
         </div>
@@ -929,8 +929,8 @@ function Dashboard({ battles, players, filterPlayer, filterBattle, filterRound, 
           <SectionTitle icon="⏱">By Round of Combat</SectionTitle>
           <ParchmentPanel style={{ marginBottom:16 }}>
             <div style={{ overflowX:"auto" }}>
-              <table style={tableStyle}>
-                <thead><tr><th style={thStyle}>Round</th>{STAT_TYPES.map((s) => <th key={s} style={{ ...thStyle, textAlign:"center", color:STAT_COLORS[s] }}>{STAT_ICONS[s]}</th>)}</tr></thead>
+              <table style={summaryTableStyle}>
+                <thead><tr><th style={{ ...thStyle, width:"220px" }}>Round</th>{STAT_TYPES.map((s) => <th key={s} style={{ ...thStyle, textAlign:"center", color:STAT_COLORS[s] }}>{STAT_ICONS[s]}</th>)}</tr></thead>
                 <tbody>
                   {roundNums.map((r) => (<tr key={r}><td style={tdNameStyle}>Round {r}</td>{STAT_TYPES.map((s) => <td key={s} style={{ ...tdStyle, textAlign:"center" }}><StatBadge stat={s} value={roundBreakdown[r][s]} small /></td>)}</tr>))}
                 </tbody>
@@ -945,10 +945,10 @@ function Dashboard({ battles, players, filterPlayer, filterBattle, filterRound, 
           <SectionTitle icon="⚔">By Encounter</SectionTitle>
           <ParchmentPanel>
             <div style={{ overflowX:"auto" }}>
-              <table style={tableStyle}>
-                <thead><tr><th style={thStyle}>Encounter</th>{STAT_TYPES.map((s) => <th key={s} style={{ ...thStyle, textAlign:"center", color:STAT_COLORS[s] }}>{STAT_ICONS[s]}</th>)}</tr></thead>
+              <table style={summaryTableStyle}>
+                <thead><tr><th style={{ ...thStyle, width:"220px" }}>Encounter</th>{STAT_TYPES.map((s) => <th key={s} style={{ ...thStyle, textAlign:"center", color:STAT_COLORS[s] }}>{STAT_ICONS[s]}</th>)}</tr></thead>
                 <tbody>
-                  {battleBreakdown.map((row) => (<tr key={row.id}><td style={tdNameStyle}>{row.name}</td>{STAT_TYPES.map((s) => <td key={s} style={{ ...tdStyle, textAlign:"center" }}><StatBadge stat={s} value={row[s]} small /></td>)}</tr>))}
+                  {battleBreakdown.map((row) => (<tr key={row.id}><td style={{ ...tdNameStyle, overflow:"hidden", textOverflow:"ellipsis" }}>{row.name}</td>{STAT_TYPES.map((s) => <td key={s} style={{ ...tdStyle, textAlign:"center" }}><StatBadge stat={s} value={row[s]} small /></td>)}</tr>))}
                 </tbody>
               </table>
             </div>
@@ -1351,6 +1351,7 @@ const rootStyle = {
   color:"#c4a97d", padding:20, minHeight:"100vh", boxSizing:"border-box",
 };
 const tableStyle = { width:"100%", borderCollapse:"collapse", fontFamily:"'Spectral', serif", fontSize:13 };
+const summaryTableStyle = { ...tableStyle, tableLayout:"fixed" };
 const thStyle = { textAlign:"left", padding:"6px 8px", fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:0.8, color:"#8b7355", borderBottom:"1px solid #3a3020", whiteSpace:"nowrap", fontFamily:"'MedievalSharp', cursive" };
 const tdStyle = { padding:"5px 8px", borderBottom:"1px solid #1a1510", verticalAlign:"middle" };
 const tdNameStyle = { ...tdStyle, fontWeight:600, color:"#c4a97d", whiteSpace:"nowrap", fontSize:13 };
