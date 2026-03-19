@@ -665,7 +665,7 @@ function Settings({ players, setPlayers, onReset, onExport, onImport }) {
       </div>
       <Divider />
       <SectionTitle icon="📦">Backup & Restore</SectionTitle>
-      <p style={{ fontSize:12, color:"#5c4a32", marginBottom:12, fontFamily:"'Spectral', serif" }}>Export saves all encounters and party data as a JSON file. Import loads from a previously exported file — current data will be overwritten.</p>
+      <p style={{ fontSize:12, color:"#5c4a32", marginBottom:12, fontFamily:"'Spectral', serif" }}>Export saves all encounters and party data as a CSV file (opens in Excel). Import loads from a previously exported CSV — current data will be overwritten.</p>
       <div style={{ display:"flex", gap:8 }}>
         <button onClick={onExport} style={{ background:"linear-gradient(180deg, #1a2010, #101808)", color:"#2e8b57", border:"1px solid #1a4020", borderRadius:4, padding:"10px 20px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"'MedievalSharp', cursive", letterSpacing:0.5 }}>
           ⬇ Export Tome
@@ -673,7 +673,7 @@ function Settings({ players, setPlayers, onReset, onExport, onImport }) {
         <button onClick={() => fileRef.current.click()} style={{ background:"linear-gradient(180deg, #101820, #0a1018)", color:"#4682b4", border:"1px solid #1a2840", borderRadius:4, padding:"10px 20px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"'MedievalSharp', cursive", letterSpacing:0.5 }}>
           ⬆ Import Tome
         </button>
-        <input ref={fileRef} type="file" accept=".json" style={{ display:"none" }}
+        <input ref={fileRef} type="file" accept=".csv" style={{ display:"none" }}
           onChange={(e) => { if (e.target.files[0]) { onImport(e.target.files[0]); e.target.value = ""; } }} />
       </div>
       <Divider />
@@ -736,11 +736,24 @@ export default function App() {
   const handleReset = () => { if (confirm("Obliterate all data? No resurrection!")) { setPlayers(DEFAULT_PLAYERS); setBattles([]); setActiveBattleIdx(0); setTab("entry"); } };
 
   const handleExport = () => {
-    const json = JSON.stringify({ players, battles, activeBattleIdx }, null, 2);
-    const url = URL.createObjectURL(new Blob([json], { type: "application/json" }));
+    const escape = (v) => `"${String(v).replace(/"/g, '""')}"`;
+    const header = ["Encounter", "Round", "Player", ...STAT_TYPES];
+    const rows = [header.map(escape).join(",")];
+    // metadata row so players order and encounter ids survive a round-trip
+    rows.push(["#players", ...players].map(escape).join(","));
+    battles.forEach((b) => {
+      for (let r = 1; r <= b.rounds; r++) {
+        players.forEach((p) => {
+          const vals = STAT_TYPES.map((s) => b.data[p]?.[s]?.[r] ?? 0);
+          rows.push([escape(b.name), r, escape(p), ...vals].join(","));
+        });
+      }
+    });
+    const csv = rows.join("\r\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
     const a = document.createElement("a");
     a.href = url;
-    a.download = `mordekai-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `mordekai-backup-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -749,14 +762,50 @@ export default function App() {
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const s = JSON.parse(e.target.result);
-        if (!Array.isArray(s.players) || !Array.isArray(s.battles)) throw new Error();
-        setPlayers(s.players);
-        setBattles(s.battles);
-        setActiveBattleIdx(s.activeBattleIdx || 0);
+        const lines = e.target.result.split(/\r?\n/).filter((l) => l.trim());
+        // first non-empty line is the header
+        const parseRow = (line) => line.match(/("(?:[^"]|"")*"|[^,]*)/g).filter((_, i) => i % 2 === 0).map((v) => v.startsWith('"') ? v.slice(1, -1).replace(/""/g, '"') : v);
+        const header = parseRow(lines[0]);
+        const statCols = header.slice(3); // after Encounter, Round, Player
+        if (header[0] !== "Encounter") throw new Error();
+
+        let importedPlayers = null;
+        const battleMap = new Map(); // name -> { name, rounds, data }
+
+        for (let i = 1; i < lines.length; i++) {
+          const row = parseRow(lines[i]);
+          if (row[0] === "#players") {
+            importedPlayers = row.slice(1).filter(Boolean);
+            continue;
+          }
+          const [enc, roundStr, player, ...statVals] = row;
+          const round = parseInt(roundStr, 10);
+          if (!enc || isNaN(round) || !player) continue;
+          if (!battleMap.has(enc)) {
+            const data = {};
+            (importedPlayers || [player]).forEach((p) => {
+              data[p] = {};
+              STAT_TYPES.forEach((s) => { data[p][s] = {}; for (let r = 1; r <= MAX_ROUNDS; r++) data[p][s][r] = 0; });
+            });
+            battleMap.set(enc, { id: generateId(), name: enc, rounds: 1, data });
+          }
+          const b = battleMap.get(enc);
+          b.rounds = Math.max(b.rounds, round);
+          if (!b.data[player]) {
+            b.data[player] = {};
+            STAT_TYPES.forEach((s) => { b.data[player][s] = {}; for (let r = 1; r <= MAX_ROUNDS; r++) b.data[player][s][r] = 0; });
+          }
+          statCols.forEach((s, idx) => { if (STAT_TYPES.includes(s)) b.data[player][s][round] = Number(statVals[idx]) || 0; });
+        }
+
+        const newBattles = [...battleMap.values()];
+        if (!newBattles.length && !importedPlayers) throw new Error();
+        setPlayers(importedPlayers || players);
+        setBattles(newBattles);
+        setActiveBattleIdx(0);
         setTab("entry");
       } catch {
-        alert("Could not read that file — make sure it's a Mordekai backup.");
+        alert("Could not read that file — make sure it's a Mordekai CSV backup.");
       }
     };
     reader.readAsText(file);
