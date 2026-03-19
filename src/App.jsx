@@ -842,34 +842,46 @@ function Dashboard({ battles, players, filterPlayer, filterBattle, filterRound, 
               </ChartCard>
             )}
             <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
-              {killPieData.length > 0 && (
-                <ChartCard title="Kill Tally" height={fp.length > 1 ? 123 : 190} icon="💀">
-                  <ResponsiveContainer>
-                    <PieChart>
-                      <Pie data={killPieData} dataKey="value" nameKey="name" cx="50%" cy="50%"
-                        outerRadius={fp.length > 1 ? 42 : 65} innerRadius={fp.length > 1 ? 20 : 32} strokeWidth={0}>
-                        {killPieData.map((d, i) => <Cell key={i} fill={d.color} />)}
-                      </Pie>
-                      <Tooltip content={<ChartTooltip />} />
-                      <Legend iconSize={8} wrapperStyle={{ fontSize:10, color:"#8b7355", fontFamily:"'Spectral', serif" }} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </ChartCard>
-              )}
-              {healPieData.length > 0 && (
-                <ChartCard title="Healing Shared" height={fp.length > 1 ? 123 : 190} icon="❤">
-                  <ResponsiveContainer>
-                    <PieChart>
-                      <Pie data={healPieData} dataKey="value" nameKey="name" cx="50%" cy="50%"
-                        outerRadius={fp.length > 1 ? 42 : 65} innerRadius={fp.length > 1 ? 20 : 32} strokeWidth={0}>
-                        {healPieData.map((d, i) => <Cell key={i} fill={d.color} />)}
-                      </Pie>
-                      <Tooltip content={<ChartTooltip />} />
-                      <Legend iconSize={8} wrapperStyle={{ fontSize:10, color:"#8b7355", fontFamily:"'Spectral', serif" }} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </ChartCard>
-              )}
+              {killPieData.length > 0 && (() => {
+                const solo = fp.length > 1 && healPieData.length === 0;
+                const h = fp.length > 1 ? (solo ? 270 : 123) : 190;
+                const or = fp.length > 1 ? (solo ? 88 : 42) : 65;
+                const ir = fp.length > 1 ? (solo ? 44 : 20) : 32;
+                return (
+                  <ChartCard title="Kill Tally" height={h} icon="💀">
+                    <ResponsiveContainer>
+                      <PieChart>
+                        <Pie data={killPieData} dataKey="value" nameKey="name" cx="50%" cy="50%"
+                          outerRadius={or} innerRadius={ir} strokeWidth={0}>
+                          {killPieData.map((d, i) => <Cell key={i} fill={d.color} />)}
+                        </Pie>
+                        <Tooltip content={<ChartTooltip />} />
+                        <Legend iconSize={8} wrapperStyle={{ fontSize:10, color:"#8b7355", fontFamily:"'Spectral', serif" }} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </ChartCard>
+                );
+              })()}
+              {healPieData.length > 0 && (() => {
+                const solo = fp.length > 1 && killPieData.length === 0;
+                const h = fp.length > 1 ? (solo ? 270 : 123) : 190;
+                const or = fp.length > 1 ? (solo ? 88 : 42) : 65;
+                const ir = fp.length > 1 ? (solo ? 44 : 20) : 32;
+                return (
+                  <ChartCard title="Healing Shared" height={h} icon="❤">
+                    <ResponsiveContainer>
+                      <PieChart>
+                        <Pie data={healPieData} dataKey="value" nameKey="name" cx="50%" cy="50%"
+                          outerRadius={or} innerRadius={ir} strokeWidth={0}>
+                          {healPieData.map((d, i) => <Cell key={i} fill={d.color} />)}
+                        </Pie>
+                        <Tooltip content={<ChartTooltip />} />
+                        <Legend iconSize={8} wrapperStyle={{ fontSize:10, color:"#8b7355", fontFamily:"'Spectral', serif" }} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </ChartCard>
+                );
+              })()}
             </div>
           </div>
 
