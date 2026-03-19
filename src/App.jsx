@@ -27,13 +27,15 @@ const CLIENT_ID = generateId();
 function createEmptyBattle(name, players) {
   const data = {};
   const dmgEntries = {};
+  const namedKills = {};
   players.forEach((p) => {
     data[p] = {};
     STAT_TYPES.forEach((s) => { data[p][s] = {}; for (let r = 1; r <= MAX_ROUNDS; r++) data[p][s][r] = 0; });
     dmgEntries[p] = {};
-    for (let r = 1; r <= MAX_ROUNDS; r++) dmgEntries[p][r] = [];
+    namedKills[p] = {};
+    for (let r = 1; r <= MAX_ROUNDS; r++) { dmgEntries[p][r] = []; namedKills[p][r] = []; }
   });
-  return { id: generateId(), name, rounds: 1, data, dmgEntries };
+  return { id: generateId(), name, rounds: 1, data, dmgEntries, namedKills };
 }
 
 /* ─── Persistence (Supabase when configured, localStorage otherwise) ─── */
@@ -227,6 +229,109 @@ function ParchmentPanel({ children, style: extraStyle }) {
   );
 }
 
+/* ─── Kill Cell ─── */
+function KillCell({ value, namedKills, onUpdate }) {
+  const [open, setOpen] = useState(false);
+  const [tooltipVisible, setTooltipVisible] = useState(false);
+  const [newKillName, setNewKillName] = useState("");
+  const ref = useRef(null);
+  const panelRef = useRef(null);
+  const [pos, setPos] = useState({ top: 0, left: 0 });
+
+  const namedCount = namedKills.length;
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (ev) => {
+      const inTrigger = ref.current && ref.current.contains(ev.target);
+      const inPanel = panelRef.current && panelRef.current.contains(ev.target);
+      if (!inTrigger && !inPanel) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  const getRect = () => {
+    const r = ref.current.getBoundingClientRect();
+    return { top: r.bottom + 4, left: Math.min(r.left, window.innerWidth - 224) };
+  };
+
+  const openPanel = () => { setPos(getRect()); setTooltipVisible(false); setOpen(true); };
+  const addNamedKill = () => {
+    const n = newKillName.trim();
+    if (!n) return;
+    const kills = [...namedKills, { id: generateId(), name: n }];
+    onUpdate(value + 1, kills);
+    setNewKillName("");
+  };
+  const removeNamedKill = (id) => {
+    const kills = namedKills.filter((k) => k.id !== id);
+    onUpdate(Math.max(0, value - 1), kills);
+  };
+
+  return (
+    <div ref={ref} style={{ position:"relative", display:"inline-flex", alignItems:"center", gap:3, justifyContent:"center" }}>
+      <input type="number" min={namedCount} value={value || ""} placeholder="–"
+        onChange={(e) => onUpdate(Math.max(namedCount, parseInt(e.target.value) || 0), namedKills)}
+        style={{ ...inputStyle, width: namedCount > 0 ? 34 : 46 }} />
+
+      {/* Gold badge showing named kill count */}
+      {namedCount > 0 && (
+        <span
+          onMouseEnter={() => { if (!open) { setPos(getRect()); setTooltipVisible(true); } }}
+          onMouseLeave={() => setTooltipVisible(false)}
+          onClick={openPanel}
+          style={{ fontSize:9, color:"#daa520", fontWeight:700, cursor:"pointer", padding:"1px 4px", background:"#1a1200", border:"1px solid #4a3800", borderRadius:3, letterSpacing:0.5, userSelect:"none" }}
+        >☠ {namedCount}</span>
+      )}
+
+      {/* Skull toggle button */}
+      <button onClick={openPanel} title="Name a kill"
+        style={{ background: namedCount > 0 ? "#1a1208" : "#2a1e10", border:`1px solid ${namedCount > 0 ? "#4a3800" : "#3a3020"}`, borderRadius:3, color: namedCount > 0 ? "#daa520" : "#5c4a32", cursor:"pointer", fontSize:10, padding:"0px 4px", lineHeight:"14px" }}>☠</button>
+
+      {/* Hover breakdown tooltip */}
+      {tooltipVisible && !open && namedCount > 0 && (
+        <div style={{ position:"fixed", top:pos.top, left:pos.left, zIndex:200, background:"#1a1510", border:"1px solid #5c4a32", borderRadius:4, padding:"6px 10px", fontSize:11, fontFamily:"'Spectral', serif", pointerEvents:"none", whiteSpace:"nowrap", boxShadow:"0 4px 16px rgba(0,0,0,0.6)" }}>
+          <div style={{ fontSize:9, color:"#8b7355", marginBottom:4, letterSpacing:1 }}>NAMED KILLS</div>
+          {namedKills.map((k) => (
+            <div key={k.id} style={{ color:"#daa520", display:"flex", gap:6, alignItems:"center" }}>
+              <span>☠</span><span style={{ fontStyle:"italic" }}>{k.name}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Entry panel */}
+      {open && (
+        <div ref={panelRef} style={{ position:"fixed", top:pos.top, left:pos.left, zIndex:300, background:"#1a1510", border:"1px solid #5c4a32", borderRadius:6, padding:"10px 12px", minWidth:218, boxShadow:"0 8px 32px rgba(0,0,0,0.7)", fontFamily:"'Spectral', serif" }}>
+          <div style={{ fontSize:10, color:"#daa520", fontFamily:"'MedievalSharp', cursive", marginBottom:8, letterSpacing:1 }}>Named Kills</div>
+          {namedKills.length > 0 ? (
+            <div style={{ display:"flex", flexDirection:"column", gap:4, marginBottom:8 }}>
+              {namedKills.map((k) => (
+                <div key={k.id} style={{ display:"flex", alignItems:"center", gap:6, background:"#110e00", borderRadius:3, padding:"4px 8px", border:"1px solid #2a2000" }}>
+                  <span style={{ color:"#daa520", fontSize:12, flexShrink:0 }}>☠</span>
+                  <span style={{ color:"#daa520", fontSize:12, fontStyle:"italic", flex:1 }}>{k.name}</span>
+                  <button onClick={() => removeNamedKill(k.id)} style={{ background:"transparent", border:"none", color:"#5c3030", cursor:"pointer", fontSize:13, fontWeight:700, padding:"0 2px", lineHeight:1 }}>×</button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ fontSize:11, color:"#3a3020", fontStyle:"italic", marginBottom:8 }}>No named kills yet</div>
+          )}
+          <div style={{ display:"flex", gap:4, alignItems:"center" }}>
+            <input value={newKillName} onChange={(e) => setNewKillName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && addNamedKill()}
+              placeholder="Name the fallen…"
+              style={{ background:"#0d0b09", border:"1px solid #3a3020", borderRadius:3, color:"#daa520", fontFamily:"'Spectral', serif", fontSize:11, fontWeight:600, padding:"4px 6px", flex:1, outline:"none", fontStyle:"italic" }} />
+            <button onClick={addNamedKill} style={{ background:"#1a1208", border:"1px solid #5c4a32", borderRadius:3, color:"#daa520", cursor:"pointer", fontSize:11, padding:"4px 8px" }}>Add</button>
+          </div>
+          <div style={{ fontSize:9, color:"#3a3020", marginTop:6, fontStyle:"italic" }}>Each named kill also counts toward the total.</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ─── Damage Cell ─── */
 function DmgCell({ entries, defaultType, onChange }) {
   const [open, setOpen] = useState(false);
@@ -313,9 +418,10 @@ function DmgCell({ entries, defaultType, onChange }) {
 }
 
 /* ─── Data Entry ─── */
-function DataEntry({ battle, players, onChange, onRoundsChange, onDmgChange, playerDefaults }) {
+function DataEntry({ battle, players, onChange, onRoundsChange, onDmgChange, onKillChange, playerDefaults }) {
   const d = battle.data;
   const dmgEntries = battle.dmgEntries || {};
+  const namedKillsData = battle.namedKills || {};
   const setCellValue = (stat, player, round, val) => {
     const next = JSON.parse(JSON.stringify(d));
     next[player][stat][round] = Math.max(0, parseInt(val) || 0);
@@ -350,6 +456,8 @@ function DataEntry({ battle, players, onChange, onRoundsChange, onDmgChange, pla
                         <td key={r} style={{ ...tdStyle, textAlign:"center" }}>
                           {stat === "DMG" ? (
                             <DmgCell entries={dmgEntries[p]?.[r] || []} defaultType={playerDefaults?.[p] || ""} onChange={(ent) => onDmgChange(p, r, ent)} />
+                          ) : stat === "KILL" ? (
+                            <KillCell value={d[p]?.["KILL"]?.[r] || 0} namedKills={namedKillsData[p]?.[r] || []} onUpdate={(val, kills) => onKillChange(p, r, val, kills)} />
                           ) : (
                             <input type="number" min={0} value={d[p]?.[stat]?.[r] || ""} placeholder="–"
                               onChange={(e) => setCellValue(stat, p, r, e.target.value)} style={inputStyle} />
@@ -457,6 +565,23 @@ function Dashboard({ battles, players, filterPlayer, filterBattle, filterRound, 
     });
     const order = [...DMG_TYPES, "—"];
     return order.filter((t) => out[t] > 0).map((t) => ({ name: t, value: out[t], color: DMG_TYPE_COLORS[t] || "#8b7355" }));
+  }, [battles, fp, filterBattle, filterRound]);
+
+  const trophyWall = useMemo(() => {
+    const kills = [];
+    const fb = filterBattle === "All" ? battles : battles.filter((b) => b.id === filterBattle);
+    fb.forEach((b) => {
+      fp.forEach((p) => {
+        for (let r = 1; r <= b.rounds; r++) {
+          if (filterRound !== "All" && r !== filterRound) continue;
+          (b.namedKills?.[p]?.[r] || []).forEach((k) => {
+            kills.push({ name: k.name, player: p, encounter: b.name, round: r, battleOrder: battles.indexOf(b) });
+          });
+        }
+      });
+    });
+    kills.sort((a, b) => a.battleOrder - b.battleOrder || a.round - b.round);
+    return kills;
   }, [battles, fp, filterBattle, filterRound]);
 
   // Stacked horizontal bar: DMG per round by player (Image 2)
@@ -768,6 +893,33 @@ function Dashboard({ battles, players, filterPlayer, filterBattle, filterRound, 
           </ParchmentPanel>
         </>
       )}
+
+      {/* ── Trophy Wall ── */}
+      {trophyWall.length > 0 && (
+        <>
+          <Divider />
+          <SectionTitle icon="☠">Trophy Wall</SectionTitle>
+          <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:16 }}>
+            {trophyWall.map((k, i) => (
+              <div key={i} style={{ display:"flex", alignItems:"center", gap:14, padding:"10px 16px", background:"linear-gradient(90deg, #1a1208 0%, #110d04 60%, #0d0b09 100%)", border:"1px solid #3a2800", borderRadius:6, boxShadow:"0 0 12px rgba(218,165,32,0.07), inset 0 1px 0 rgba(218,165,32,0.06)" }}>
+                <span style={{ fontSize:22, color:"#daa520", flexShrink:0, textShadow:"0 0 12px rgba(218,165,32,0.6)" }}>☠</span>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontSize:14, fontWeight:700, color:"#daa520", fontFamily:"'MedievalSharp', cursive", letterSpacing:0.5, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{k.name}</div>
+                  <div style={{ fontSize:11, color:"#5c4a32", fontFamily:"'Spectral', serif", marginTop:2 }}>
+                    Slain by{" "}
+                    <span style={{ color: PLAYER_COLORS[players.indexOf(k.player) % PLAYER_COLORS.length], fontWeight:700 }}>{k.player}</span>
+                    <span style={{ color:"#3a3020" }}> · </span>
+                    <span style={{ color:"#8b7355", fontStyle:"italic" }}>{k.encounter}</span>
+                    <span style={{ color:"#3a3020" }}> · </span>
+                    <span style={{ color:"#5c4a32" }}>Round {k.round}</span>
+                  </div>
+                </div>
+                <div style={{ fontSize:11, color:"#3a2800", fontFamily:"'MedievalSharp', cursive", flexShrink:0 }}>R{k.round}</div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -881,13 +1033,27 @@ export default function App() {
     setBattles((prev) => prev.map((b) => {
       const nd = { ...b.data };
       const nde = { ...(b.dmgEntries || {}) };
+      const nnk = { ...(b.namedKills || {}) };
       np.forEach((p) => {
         if (!nd[p]) { nd[p] = {}; STAT_TYPES.forEach((s) => { nd[p][s] = {}; for (let r = 1; r <= MAX_ROUNDS; r++) nd[p][s][r] = 0; }); }
         if (!nde[p]) { nde[p] = {}; for (let r = 1; r <= MAX_ROUNDS; r++) nde[p][r] = []; }
+        if (!nnk[p]) { nnk[p] = {}; for (let r = 1; r <= MAX_ROUNDS; r++) nnk[p][r] = []; }
       });
-      return { ...b, data:nd, dmgEntries:nde };
+      return { ...b, data:nd, dmgEntries:nde, namedKills:nnk };
     }));
   };
+  const updateKillCell = (player, round, total, namedKillsList) => {
+    setBattles((prev) => prev.map((b, i) => {
+      if (i !== activeBattleIdx) return b;
+      const nextData = JSON.parse(JSON.stringify(b.data));
+      nextData[player]["KILL"][round] = Math.max(0, total);
+      const nextNamedKills = JSON.parse(JSON.stringify(b.namedKills || {}));
+      if (!nextNamedKills[player]) nextNamedKills[player] = {};
+      nextNamedKills[player][round] = namedKillsList;
+      return { ...b, data:nextData, namedKills:nextNamedKills };
+    }));
+  };
+
   const updateDmgCell = (player, round, entries) => {
     const total = entries.reduce((a, e) => a + (e.amount || 0), 0);
     setBattles((prev) => prev.map((b, i) => {
@@ -906,7 +1072,7 @@ export default function App() {
   const handleExport = () => {
     const escape = (v) => `"${String(v).replace(/"/g, '""')}"`;
     const dmgTypeCols = DMG_TYPES.map((t) => `DMG:${t}`);
-    const header = ["Encounter", "Round", "Player", ...STAT_TYPES, ...dmgTypeCols];
+    const header = ["Encounter", "Round", "Player", ...STAT_TYPES, ...dmgTypeCols, "KILL:Named"];
     const rows = [header.map(escape).join(",")];
     rows.push(["#players", ...players].map(escape).join(","));
     battles.forEach((b) => {
@@ -914,8 +1080,8 @@ export default function App() {
         players.forEach((p) => {
           const statVals = STAT_TYPES.map((s) => b.data[p]?.[s]?.[r] ?? 0);
           const typeVals = DMG_TYPES.map((t) => (b.dmgEntries?.[p]?.[r] || []).filter((e) => e.type === t).reduce((a, e) => a + (e.amount || 0), 0));
-          // also capture untyped entries
-          rows.push([escape(b.name), r, escape(p), ...statVals, ...typeVals].join(","));
+          const namedKillStr = (b.namedKills?.[p]?.[r] || []).map((k) => k.name.replace(/\|/g, "\\|")).join("|");
+          rows.push([escape(b.name), r, escape(p), ...statVals, ...typeVals, escape(namedKillStr)].join(","));
         });
       }
     });
@@ -939,6 +1105,7 @@ export default function App() {
         if (header[0] !== "Encounter") throw new Error();
         const statColIdxs = STAT_TYPES.map((s) => header.indexOf(s));
         const dmgTypeColIdxs = DMG_TYPES.map((t) => header.indexOf(`DMG:${t}`));
+        const namedKillColIdx = header.indexOf("KILL:Named");
 
         let importedPlayers = null;
         const battleMap = new Map();
@@ -952,13 +1119,15 @@ export default function App() {
           if (!battleMap.has(enc)) {
             const data = {};
             const dmgEntries = {};
+            const namedKills = {};
             (importedPlayers || [player]).forEach((p) => {
               data[p] = {};
               STAT_TYPES.forEach((s) => { data[p][s] = {}; for (let r = 1; r <= MAX_ROUNDS; r++) data[p][s][r] = 0; });
               dmgEntries[p] = {};
-              for (let r = 1; r <= MAX_ROUNDS; r++) dmgEntries[p][r] = [];
+              namedKills[p] = {};
+              for (let r = 1; r <= MAX_ROUNDS; r++) { dmgEntries[p][r] = []; namedKills[p][r] = []; }
             });
-            battleMap.set(enc, { id: generateId(), name: enc, rounds: 1, data, dmgEntries });
+            battleMap.set(enc, { id: generateId(), name: enc, rounds: 1, data, dmgEntries, namedKills });
           }
           const b = battleMap.get(enc);
           b.rounds = Math.max(b.rounds, round);
@@ -966,12 +1135,18 @@ export default function App() {
             b.data[player] = {};
             STAT_TYPES.forEach((s) => { b.data[player][s] = {}; for (let r = 1; r <= MAX_ROUNDS; r++) b.data[player][s][r] = 0; });
             b.dmgEntries[player] = {};
-            for (let r = 1; r <= MAX_ROUNDS; r++) b.dmgEntries[player][r] = [];
+            b.namedKills[player] = {};
+            for (let r = 1; r <= MAX_ROUNDS; r++) { b.dmgEntries[player][r] = []; b.namedKills[player][r] = []; }
           }
           STAT_TYPES.forEach((s, si) => { if (statColIdxs[si] >= 0) b.data[player][s][round] = Number(row[statColIdxs[si]]) || 0; });
           // reconstruct dmgEntries from per-type columns (one entry per type)
           const typeEntries = DMG_TYPES.map((t, ti) => dmgTypeColIdxs[ti] >= 0 ? { type: t, amount: Number(row[dmgTypeColIdxs[ti]]) || 0 } : null).filter((e) => e && e.amount > 0);
           if (typeEntries.length > 0) b.dmgEntries[player][round] = typeEntries;
+          // reconstruct namedKills from KILL:Named column
+          if (namedKillColIdx >= 0 && row[namedKillColIdx]) {
+            const names = row[namedKillColIdx].split(/(?<!\\)\|/).map((n) => n.replace(/\\\|/g, "|").trim()).filter(Boolean);
+            if (names.length > 0) b.namedKills[player][round] = names.map((name) => ({ id: generateId(), name }));
+          }
         }
 
         const newBattles = [...battleMap.values()];
@@ -1064,7 +1239,7 @@ export default function App() {
             )}
           </div>
           {activeBattle ? (
-            <DataEntry battle={activeBattle} players={players} onChange={updateBattleData} onRoundsChange={updateBattleRounds} onDmgChange={updateDmgCell} playerDefaults={playerDefaults} />
+            <DataEntry battle={activeBattle} players={players} onChange={updateBattleData} onRoundsChange={updateBattleRounds} onDmgChange={updateDmgCell} onKillChange={updateKillCell} playerDefaults={playerDefaults} />
           ) : (
             <ParchmentPanel style={{ textAlign:"center", padding:40 }}>
               <D20Icon size={48} color="#3a3020" />
