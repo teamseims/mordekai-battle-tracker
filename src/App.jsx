@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { supabase } from "./supabase.js";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   LineChart, Line, PieChart, Pie, Cell, Legend, CartesianGrid,
@@ -18,25 +19,64 @@ const DEFAULT_PLAYERS = ["King Gizzard", "Lucien", "Shio", "Kazzak", "Fazula"];
 
 function generateId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 
+// Unique ID for this browser tab. Used to suppress realtime echoes of our own saves.
+const CLIENT_ID = generateId();
+
 function createEmptyBattle(name, players) {
   const data = {};
   players.forEach((p) => { data[p] = {}; STAT_TYPES.forEach((s) => { data[p][s] = {}; for (let r = 1; r <= MAX_ROUNDS; r++) data[p][s][r] = 0; }); });
   return { id: generateId(), name, rounds: 1, data };
 }
 
-/* ─── localStorage persistence (replaces window.storage) ─── */
+/* ─── Persistence (Supabase when configured, localStorage otherwise) ─── */
+const STORAGE_KEY = "wrencoria-dnd-v4";
+const CAMPAIGN_ID = "default";
+let _saveTimer = null;
+let _onSyncChange = null; // set by the App component to update sync status
+
 async function loadState() {
+  if (supabase) {
+    try {
+      const { data } = await supabase
+        .from("campaigns")
+        .select("state")
+        .eq("id", CAMPAIGN_ID)
+        .single();
+      if (data?.state && Object.keys(data.state).length > 0) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data.state));
+        return data.state;
+      }
+    } catch {}
+  }
   try {
-    const raw = localStorage.getItem("wrencoria-dnd-v4");
+    const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) return JSON.parse(raw);
   } catch {}
   return null;
 }
 
 async function saveState(state) {
-  try {
-    localStorage.setItem("wrencoria-dnd-v4", JSON.stringify(state));
-  } catch {}
+  // Always write localStorage immediately as an offline backup.
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}
+
+  if (!supabase) return;
+
+  // Debounce Supabase writes so rapid typing doesn't hammer the API.
+  _onSyncChange?.("saving");
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(async () => {
+    try {
+      await supabase.from("campaigns").upsert({
+        id: CAMPAIGN_ID,
+        state,
+        client_id: CLIENT_ID,
+        updated_at: new Date().toISOString(),
+      });
+      _onSyncChange?.("saved");
+    } catch {
+      _onSyncChange?.("error");
+    }
+  }, 1200);
 }
 
 /* ─── Ornament SVG elements ─── */
@@ -545,9 +585,35 @@ export default function App() {
   const [filterRound, setFilterRound] = useState("All");
   const [newBattleName, setNewBattleName] = useState("");
   const [showNewBattle, setShowNewBattle] = useState(false);
+  const [syncStatus, setSyncStatus] = useState("idle"); // "saving" | "saved" | "error"
 
+  // Wire the module-level save callback to this component's state setter.
+  const setSyncRef = useRef(setSyncStatus);
+  setSyncRef.current = setSyncStatus;
+  useEffect(() => { _onSyncChange = (s) => setSyncRef.current(s); return () => { _onSyncChange = null; }; }, []);
+
+  // Load state on mount.
   useEffect(() => { loadState().then((s) => { if (s) { setPlayers(s.players || DEFAULT_PLAYERS); setBattles(s.battles || []); setActiveBattleIdx(s.activeBattleIdx || 0); } setLoaded(true); }); }, []);
+
+  // Save whenever state changes (debounced in saveState for Supabase).
   useEffect(() => { if (loaded) saveState({ players, battles, activeBattleIdx }); }, [players, battles, activeBattleIdx, loaded]);
+
+  // Subscribe to realtime changes from other users.
+  useEffect(() => {
+    if (!supabase || !loaded) return;
+    const channel = supabase
+      .channel("campaign-sync")
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "campaigns", filter: `id=eq.${CAMPAIGN_ID}` }, ({ new: row }) => {
+        if (row.client_id === CLIENT_ID) return; // ignore our own echoes
+        const s = row.state;
+        if (!s) return;
+        setPlayers(s.players || DEFAULT_PLAYERS);
+        setBattles(s.battles || []);
+        setActiveBattleIdx(s.activeBattleIdx ?? 0);
+      })
+      .subscribe();
+    return () => supabase.removeChannel(channel);
+  }, [loaded]);
 
   const addBattle = () => { const name = newBattleName.trim() || `Encounter ${battles.length + 1}`; setBattles([...battles, createEmptyBattle(name, players)]); setActiveBattleIdx(battles.length); setNewBattleName(""); setShowNewBattle(false); setTab("entry"); };
   const deleteBattle = (idx) => { const next = battles.filter((_, i) => i !== idx); setBattles(next); setActiveBattleIdx(Math.min(activeBattleIdx, Math.max(0, next.length - 1))); };
@@ -580,8 +646,16 @@ export default function App() {
         <div style={{ fontSize:11, textTransform:"uppercase", letterSpacing:4, color:"#5c4a32", fontWeight:600, fontFamily:"'Spectral', serif" }}>
           Chronicle of Battle
         </div>
-        <div style={{ fontSize:10, color:"#3a3020", fontStyle:"italic", marginTop:4, fontFamily:"'Spectral', serif" }}>
-          {battles.length} encounter{battles.length !== 1 ? "s" : ""} recorded · {players.length} adventurer{players.length !== 1 ? "s" : ""} in the party
+        <div style={{ fontSize:10, color:"#3a3020", fontStyle:"italic", marginTop:4, fontFamily:"'Spectral', serif", display:"flex", justifyContent:"center", alignItems:"center", gap:10 }}>
+          <span>{battles.length} encounter{battles.length !== 1 ? "s" : ""} recorded · {players.length} adventurer{players.length !== 1 ? "s" : ""} in the party</span>
+          {supabase && (
+            <span style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:9, textTransform:"uppercase", letterSpacing:1, fontStyle:"normal" }}>
+              <span style={{ width:6, height:6, borderRadius:"50%", background: syncStatus === "error" ? "#d4442a" : syncStatus === "saving" ? "#daa520" : "#2e8b57", boxShadow:`0 0 6px ${syncStatus === "error" ? "#d4442a" : syncStatus === "saving" ? "#daa520" : "#2e8b57"}88` }} />
+              <span style={{ color: syncStatus === "error" ? "#d4442a" : syncStatus === "saving" ? "#daa520" : "#2e8b57" }}>
+                {syncStatus === "error" ? "Sync error" : syncStatus === "saving" ? "Saving…" : "Live"}
+              </span>
+            </span>
+          )}
         </div>
         <div style={{ margin:"10px auto 0", width:200, height:1, background:"linear-gradient(90deg, transparent, #5c4a32, transparent)" }} />
       </div>
