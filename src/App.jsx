@@ -639,8 +639,9 @@ function Dashboard({ battles, players, filterPlayer, filterBattle, filterRound, 
 }
 
 /* ─── Settings ─── */
-function Settings({ players, setPlayers, onReset }) {
+function Settings({ players, setPlayers, onReset, onExport, onImport }) {
   const [newName, setNewName] = useState("");
+  const fileRef = useRef(null);
   const addPlayer = () => { const n = newName.trim(); if (n && !players.includes(n)) { setPlayers([...players, n]); setNewName(""); } };
   const removePlayer = (p) => { if (players.length > 1) setPlayers(players.filter((x) => x !== p)); };
   return (
@@ -661,6 +662,19 @@ function Settings({ players, setPlayers, onReset }) {
         <input value={newName} onChange={(e) => setNewName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addPlayer()}
           placeholder="New adventurer…" style={{ ...inputStyle, flex:1, textAlign:"left", padding:"8px 12px", fontSize:13 }} />
         <button onClick={addPlayer} style={{ ...roundBtnStyle, padding:"8px 16px", fontSize:13, color:"#daa520" }}>Recruit</button>
+      </div>
+      <Divider />
+      <SectionTitle icon="📦">Backup & Restore</SectionTitle>
+      <p style={{ fontSize:12, color:"#5c4a32", marginBottom:12, fontFamily:"'Spectral', serif" }}>Export saves all encounters and party data as a JSON file. Import loads from a previously exported file — current data will be overwritten.</p>
+      <div style={{ display:"flex", gap:8 }}>
+        <button onClick={onExport} style={{ background:"linear-gradient(180deg, #1a2010, #101808)", color:"#2e8b57", border:"1px solid #1a4020", borderRadius:4, padding:"10px 20px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"'MedievalSharp', cursive", letterSpacing:0.5 }}>
+          ⬇ Export Tome
+        </button>
+        <button onClick={() => fileRef.current.click()} style={{ background:"linear-gradient(180deg, #101820, #0a1018)", color:"#4682b4", border:"1px solid #1a2840", borderRadius:4, padding:"10px 20px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"'MedievalSharp', cursive", letterSpacing:0.5 }}>
+          ⬆ Import Tome
+        </button>
+        <input ref={fileRef} type="file" accept=".json" style={{ display:"none" }}
+          onChange={(e) => { if (e.target.files[0]) { onImport(e.target.files[0]); e.target.value = ""; } }} />
       </div>
       <Divider />
       <SectionTitle icon="⚠">Danger Zone</SectionTitle>
@@ -720,6 +734,33 @@ export default function App() {
   const updateBattleRounds = (rounds) => setBattles((p) => p.map((b, i) => i === activeBattleIdx ? { ...b, rounds } : b));
   const handleSetPlayers = (np) => { setPlayers(np); setBattles((prev) => prev.map((b) => { const nd = { ...b.data }; np.forEach((p) => { if (!nd[p]) { nd[p] = {}; STAT_TYPES.forEach((s) => { nd[p][s] = {}; for (let r = 1; r <= MAX_ROUNDS; r++) nd[p][s][r] = 0; }); } }); return { ...b, data:nd }; })); };
   const handleReset = () => { if (confirm("Obliterate all data? No resurrection!")) { setPlayers(DEFAULT_PLAYERS); setBattles([]); setActiveBattleIdx(0); setTab("entry"); } };
+
+  const handleExport = () => {
+    const json = JSON.stringify({ players, battles, activeBattleIdx }, null, 2);
+    const url = URL.createObjectURL(new Blob([json], { type: "application/json" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `mordekai-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImport = (file) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const s = JSON.parse(e.target.result);
+        if (!Array.isArray(s.players) || !Array.isArray(s.battles)) throw new Error();
+        setPlayers(s.players);
+        setBattles(s.battles);
+        setActiveBattleIdx(s.activeBattleIdx || 0);
+        setTab("entry");
+      } catch {
+        alert("Could not read that file — make sure it's a Mordekai backup.");
+      }
+    };
+    reader.readAsText(file);
+  };
 
   const activeBattle = battles[activeBattleIdx];
 
@@ -816,7 +857,7 @@ export default function App() {
               setFilterPlayer={setFilterPlayer} setFilterBattle={setFilterBattle} setFilterRound={setFilterRound} />
       )}
 
-      {tab === "settings" && <Settings players={players} setPlayers={handleSetPlayers} onReset={handleReset} />}
+      {tab === "settings" && <Settings players={players} setPlayers={handleSetPlayers} onReset={handleReset} onExport={handleExport} onImport={handleImport} />}
 
       {/* Footer */}
       <div style={{ textAlign:"center", marginTop:30, paddingTop:14, borderTop:"1px solid #1a1510" }}>
