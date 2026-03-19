@@ -221,63 +221,63 @@ function ParchmentPanel({ children, style: extraStyle }) {
 
 /* ─── Data Entry ─── */
 function DataEntry({ battle, players, onChange, onRoundsChange }) {
-  const [activeStat, setActiveStat] = useState("DMG");
   const d = battle.data;
-  const setCellValue = (player, round, val) => {
+  const setCellValue = (stat, player, round, val) => {
     const next = JSON.parse(JSON.stringify(d));
-    next[player][activeStat][round] = Math.max(0, parseInt(val) || 0);
+    next[player][stat][round] = Math.max(0, parseInt(val) || 0);
     onChange(next);
   };
   const roundNums = Array.from({ length: battle.rounds }, (_, i) => i + 1);
 
   return (
     <ParchmentPanel>
-      <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:14 }}>
-        {STAT_TYPES.map((s) => (
-          <Pill key={s} active={activeStat === s} onClick={() => setActiveStat(s)} color={STAT_COLORS[s]}>
-            {STAT_ICONS[s]} {s}
-          </Pill>
-        ))}
-      </div>
-      <div style={{ overflowX:"auto", paddingBottom:8 }}>
-        <table style={tableStyle}>
-          <thead>
-            <tr>
-              <th style={thStyle}>Adventurer</th>
-              {roundNums.map((r) => <th key={r} style={{ ...thStyle, textAlign:"center", minWidth:52 }}>R{r}</th>)}
-              <th style={{ ...thStyle, textAlign:"center", color:STAT_COLORS[activeStat] }}>Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            {players.map((p) => {
-              const total = roundNums.reduce((acc, r) => acc + (d[p]?.[activeStat]?.[r] || 0), 0);
-              return (
-                <tr key={p} style={{ borderBottom:"1px solid #2a2018" }}>
-                  <td style={tdNameStyle}>{p}</td>
-                  {roundNums.map((r) => (
-                    <td key={r} style={tdStyle}>
-                      <input type="number" min={0} value={d[p]?.[activeStat]?.[r] || ""} placeholder="–"
-                        onChange={(e) => setCellValue(p, r, e.target.value)} style={inputStyle} />
-                    </td>
-                  ))}
-                  <td style={{ ...tdStyle, textAlign:"center" }}><StatBadge stat={activeStat} value={total} /></td>
+      {STAT_TYPES.map((stat) => (
+        <div key={stat} style={{ marginBottom:20 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8, paddingBottom:6, borderBottom:`1px solid ${STAT_COLORS[stat]}33` }}>
+            <span style={{ fontSize:15 }}>{STAT_ICONS[stat]}</span>
+            <span style={{ fontSize:12, fontWeight:700, fontFamily:"'MedievalSharp', cursive", letterSpacing:1.5, color:STAT_COLORS[stat], textTransform:"uppercase" }}>{stat}</span>
+          </div>
+          <div style={{ overflowX:"auto", paddingBottom:4 }}>
+            <table style={tableStyle}>
+              <thead>
+                <tr>
+                  <th style={thStyle}>Adventurer</th>
+                  {roundNums.map((r) => <th key={r} style={{ ...thStyle, textAlign:"center", minWidth:52 }}>R{r}</th>)}
+                  <th style={{ ...thStyle, textAlign:"center", color:STAT_COLORS[stat] }}>Total</th>
                 </tr>
-              );
-            })}
-            <tr>
-              <td style={{ ...tdNameStyle, color:"#8b7355", fontStyle:"italic" }}>Party</td>
-              {roundNums.map((r) => {
-                const ct = players.reduce((a, p) => a + (d[p]?.[activeStat]?.[r] || 0), 0);
-                return <td key={r} style={{ ...tdStyle, textAlign:"center", color:"#8b7355" }}>{ct || "–"}</td>;
-              })}
-              <td style={{ ...tdStyle, textAlign:"center" }}>
-                <StatBadge stat={activeStat} value={players.reduce((a, p) => a + roundNums.reduce((a2, r) => a2 + (d[p]?.[activeStat]?.[r] || 0), 0), 0)} />
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <div style={{ display:"flex", gap:8, marginTop:12, alignItems:"center" }}>
+              </thead>
+              <tbody>
+                {players.map((p) => {
+                  const total = roundNums.reduce((acc, r) => acc + (d[p]?.[stat]?.[r] || 0), 0);
+                  return (
+                    <tr key={p} style={{ borderBottom:"1px solid #2a2018" }}>
+                      <td style={tdNameStyle}>{p}</td>
+                      {roundNums.map((r) => (
+                        <td key={r} style={{ ...tdStyle, textAlign:"center" }}>
+                          <input type="number" min={0} value={d[p]?.[stat]?.[r] || ""} placeholder="–"
+                            onChange={(e) => setCellValue(stat, p, r, e.target.value)} style={inputStyle} />
+                        </td>
+                      ))}
+                      <td style={{ ...tdStyle, textAlign:"center" }}><StatBadge stat={stat} value={total} /></td>
+                    </tr>
+                  );
+                })}
+                <tr>
+                  <td style={{ ...tdNameStyle, color:"#8b7355", fontStyle:"italic" }}>Party</td>
+                  {roundNums.map((r) => {
+                    const ct = players.reduce((a, p) => a + (d[p]?.[stat]?.[r] || 0), 0);
+                    return <td key={r} style={{ ...tdStyle, textAlign:"center", color:"#8b7355" }}>{ct || "–"}</td>;
+                  })}
+                  <td style={{ ...tdStyle, textAlign:"center" }}>
+                    <StatBadge stat={stat} value={players.reduce((a, p) => a + roundNums.reduce((a2, r) => a2 + (d[p]?.[stat]?.[r] || 0), 0), 0)} />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ))}
+      <div style={{ display:"flex", gap:8, marginTop:4, alignItems:"center" }}>
         <span style={{ fontSize:12, color:"#8b7355", fontFamily:"'Spectral', serif" }}>Rounds of Combat:</span>
         <button onClick={() => onRoundsChange(Math.max(1, battle.rounds - 1))} style={roundBtnStyle}>−</button>
         <span style={{ fontFamily:"'MedievalSharp', cursive", fontSize:16, fontWeight:700, color:"#daa520", minWidth:20, textAlign:"center" }}>{battle.rounds}</span>
