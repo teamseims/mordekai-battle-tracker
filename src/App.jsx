@@ -4,7 +4,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   LineChart, Line, PieChart, Pie, Cell, Legend, CartesianGrid,
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
-  AreaChart, Area,
+  AreaChart, Area, LabelList,
 } from "recharts";
 
 const STAT_TYPES = ["DMG", "KILL", "HEAL", "REVIVE", "NAT 20", "NAT 1"];
@@ -343,6 +343,32 @@ function Dashboard({ battles, players, filterPlayer, filterBattle, filterRound, 
     return battles.map((b) => { const row = { name:b.name, id:b.id }; STAT_TYPES.forEach((s) => { row[s] = 0; fp.forEach((p) => { if (!b.data[p]) return; for (let r = 1; r <= b.rounds; r++) { if (filterRound !== "All" && r !== filterRound) continue; row[s] += b.data[p]?.[s]?.[r] || 0; } }); }); return row; });
   }, [battles, fp, filterRound]);
 
+  // Stacked horizontal bar: DMG per round by player (Image 2)
+  const stackedDmgData = useMemo(() => {
+    if (fb2.length === 0) return [];
+    const maxRound = Math.max(...fb2.map((b) => b.rounds));
+    const rows = [];
+    for (let r = 1; r <= maxRound; r++) {
+      if (filterRound !== "All" && r !== filterRound) continue;
+      const row = { name: `Round ${r}` };
+      fp.forEach((p) => { row[p] = fb2.reduce((a, b) => r <= b.rounds ? a + (b.data[p]?.DMG?.[r] || 0) : a, 0); });
+      rows.push(row);
+    }
+    while (rows.length > 0 && fp.every((p) => !rows[rows.length - 1][p])) rows.pop();
+    return rows;
+  }, [fb2, fp, filterRound]);
+
+  // Per-battle DMG line: total party DMG per round for each encounter (Image 3)
+  const perBattleDmgData = useMemo(() => {
+    if (fb2.length <= 1) return [];
+    const maxRound = Math.max(...fb2.map((b) => b.rounds));
+    return Array.from({ length: maxRound }, (_, i) => i + 1).map((r) => {
+      const row = { name: `Round ${r}` };
+      fb2.forEach((b) => { if (r <= b.rounds) row[b.name] = fp.reduce((a, p) => a + (b.data[p]?.DMG?.[r] || 0), 0); });
+      return row;
+    });
+  }, [fb2, fp]);
+
   const roundNums = Array.from({ length: MAX_ROUNDS }, (_, i) => i + 1).filter(
     (r) => filterRound !== "All" ? r === filterRound : Object.values(roundBreakdown[r]).some((v) => v > 0)
   );
@@ -387,33 +413,106 @@ function Dashboard({ battles, players, filterPlayer, filterBattle, filterRound, 
       {/* CHARTS */}
       {hasAnyData && (
         <>
-          {fp.length > 1 && (
-            <ChartCard title="Party Comparison — Damage · Kills · Healing" height={240} icon="⚔">
+          {/* ── 3 grouped bar charts: stat pairs by adventurer ── */}
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:14, marginBottom:14 }}>
+            {[["DMG","HEAL","⚔"],["KILL","REVIVE","💀"],["NAT 20","NAT 1","★"]].map(([a, b, icon]) => {
+              const data = fp.map((p) => ({ name: p.length > 9 ? p.slice(0,8)+"…" : p, [a]: stats[p][a], [b]: stats[p][b] }));
+              return (
+                <ChartCard key={a} title={`${a} & ${b}`} height={210} icon={icon}>
+                  <ResponsiveContainer>
+                    <BarChart data={data} barGap={3} barCategoryGap="25%">
+                      <CartesianGrid strokeDasharray="3 3" stroke="#2a2018" />
+                      <XAxis dataKey="name" tick={{ fill:"#8b7355", fontSize:9 }} axisLine={{ stroke:"#3a3020" }} />
+                      <YAxis tick={{ fill:"#5c4a32", fontSize:9 }} axisLine={{ stroke:"#3a3020" }} />
+                      <Tooltip content={<ChartTooltip />} />
+                      <Bar dataKey={a} fill={STAT_COLORS[a]} radius={[3,3,0,0]}>
+                        <LabelList dataKey={a} position="top" fill="#c4a97d" fontSize={9} formatter={(v) => v > 0 ? v : "·"} />
+                      </Bar>
+                      <Bar dataKey={b} fill={STAT_COLORS[b]} radius={[3,3,0,0]}>
+                        <LabelList dataKey={b} position="top" fill="#c4a97d" fontSize={9} formatter={(v) => v > 0 ? v : "·"} />
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </ChartCard>
+              );
+            })}
+          </div>
+
+          {/* ── Per-round party totals: 3×2 grid (line for DMG/HEAL, bars for rest) ── */}
+          {roundNums.length > 0 && (
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:14, marginBottom:14 }}>
+              {[["DMG","line"],["KILL","bar"],["NAT 20","bar"],["HEAL","line"],["REVIVE","bar"],["NAT 1","bar"]].map(([stat, type]) => {
+                const color = STAT_COLORS[stat];
+                const data = roundNums.map((r) => ({ name: `Round ${r}`, value: roundBreakdown[r][stat] }));
+                return (
+                  <ChartCard key={stat} title={stat} height={190} icon={STAT_ICONS[stat]}>
+                    <ResponsiveContainer>
+                      {type === "line" ? (
+                        <LineChart data={data}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#2a2018" />
+                          <XAxis dataKey="name" tick={{ fill:"#8b7355", fontSize:8 }} axisLine={{ stroke:"#3a3020" }} />
+                          <YAxis tick={{ fill:"#5c4a32", fontSize:8 }} axisLine={{ stroke:"#3a3020" }} />
+                          <Tooltip content={<ChartTooltip />} />
+                          <Line type="monotone" dataKey="value" name={stat} stroke={color} strokeWidth={2.5}
+                            dot={{ r:4, fill:color, stroke:"#0d0b09", strokeWidth:1 }}>
+                            <LabelList dataKey="value" position="top" fill={color} fontSize={9} formatter={(v) => v > 0 ? v : "·"} />
+                          </Line>
+                        </LineChart>
+                      ) : (
+                        <BarChart data={data}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#2a2018" />
+                          <XAxis dataKey="name" tick={{ fill:"#8b7355", fontSize:8 }} axisLine={{ stroke:"#3a3020" }} />
+                          <YAxis tick={{ fill:"#5c4a32", fontSize:8 }} axisLine={{ stroke:"#3a3020" }} />
+                          <Tooltip content={<ChartTooltip />} />
+                          <Bar dataKey="value" name={stat} fill={color} radius={[3,3,0,0]}>
+                            <LabelList dataKey="value" position="top" fill={color} fontSize={9} formatter={(v) => v > 0 ? v : "·"} />
+                          </Bar>
+                        </BarChart>
+                      )}
+                    </ResponsiveContainer>
+                  </ChartCard>
+                );
+              })}
+            </div>
+          )}
+
+          {/* ── Stacked horizontal bar: DMG per round broken down by player ── */}
+          {stackedDmgData.length > 0 && fp.length > 1 && (
+            <ChartCard title="Damage by Player per Round" height={Math.max(220, stackedDmgData.length * 34 + 80)} icon="⚔">
               <ResponsiveContainer>
-                <BarChart data={playerBarData} barGap={2} barCategoryGap="20%">
+                <BarChart layout="vertical" data={stackedDmgData} barCategoryGap="20%">
                   <CartesianGrid strokeDasharray="3 3" stroke="#2a2018" />
-                  <XAxis dataKey="name" tick={{ fill:"#8b7355", fontSize:10, fontFamily:"'Spectral', serif" }} axisLine={{ stroke:"#3a3020" }} />
-                  <YAxis tick={{ fill:"#5c4a32", fontSize:10 }} axisLine={{ stroke:"#3a3020" }} />
+                  <XAxis type="number" tick={{ fill:"#5c4a32", fontSize:9 }} axisLine={{ stroke:"#3a3020" }} />
+                  <YAxis type="category" dataKey="name" tick={{ fill:"#8b7355", fontSize:9 }} axisLine={{ stroke:"#3a3020" }} width={58} />
                   <Tooltip content={<ChartTooltip />} />
-                  <Bar dataKey="DMG" fill={STAT_COLORS.DMG} radius={[3,3,0,0]} />
-                  <Bar dataKey="KILL" fill={STAT_COLORS.KILL} radius={[3,3,0,0]} />
-                  <Bar dataKey="HEAL" fill={STAT_COLORS.HEAL} radius={[3,3,0,0]} />
+                  <Legend iconSize={8} wrapperStyle={{ fontSize:10, color:"#8b7355", fontFamily:"'Spectral', serif" }} />
+                  {fp.map((p) => (
+                    <Bar key={p} dataKey={p} stackId="dmg" fill={PLAYER_COLORS[players.indexOf(p) % PLAYER_COLORS.length]}>
+                      <LabelList dataKey={p} position="inside" fill="#fff" fontSize={8} formatter={(v) => v > 0 ? v : ""} />
+                    </Bar>
+                  ))}
                 </BarChart>
               </ResponsiveContainer>
             </ChartCard>
           )}
 
-          {roundLineData.length > 1 && (
-            <ChartCard title="Damage Through the Rounds" height={220} icon="📈">
+          {/* ── Multi-line: party DMG per round compared across encounters ── */}
+          {perBattleDmgData.length > 0 && fb2.length > 1 && (
+            <ChartCard title="Damage per Round by Encounter" height={220} icon="📜">
               <ResponsiveContainer>
-                <LineChart data={roundLineData}>
+                <LineChart data={perBattleDmgData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#2a2018" />
-                  <XAxis dataKey="name" tick={{ fill:"#8b7355", fontSize:10 }} axisLine={{ stroke:"#3a3020" }} />
-                  <YAxis tick={{ fill:"#5c4a32", fontSize:10 }} axisLine={{ stroke:"#3a3020" }} />
+                  <XAxis dataKey="name" tick={{ fill:"#8b7355", fontSize:9 }} axisLine={{ stroke:"#3a3020" }} />
+                  <YAxis tick={{ fill:"#5c4a32", fontSize:9 }} axisLine={{ stroke:"#3a3020" }} />
                   <Tooltip content={<ChartTooltip />} />
-                  {fp.map((p) => (
-                    <Line key={p} type="monotone" dataKey={p} stroke={PLAYER_COLORS[players.indexOf(p) % PLAYER_COLORS.length]}
-                      strokeWidth={2.5} dot={{ r:4, fill:PLAYER_COLORS[players.indexOf(p) % PLAYER_COLORS.length], stroke:"#0d0b09", strokeWidth:1 }} />
+                  <Legend iconSize={8} wrapperStyle={{ fontSize:10, color:"#8b7355", fontFamily:"'Spectral', serif" }} />
+                  {fb2.map((b, i) => (
+                    <Line key={b.id} type="monotone" dataKey={b.name}
+                      stroke={PLAYER_COLORS[i % PLAYER_COLORS.length]} strokeWidth={2.5}
+                      dot={{ r:4, fill:PLAYER_COLORS[i % PLAYER_COLORS.length], stroke:"#0d0b09", strokeWidth:1 }}>
+                      <LabelList dataKey={b.name} position="top" fill={PLAYER_COLORS[i % PLAYER_COLORS.length]} fontSize={9}
+                        formatter={(v) => v != null && v > 0 ? v : ""} />
+                    </Line>
                   ))}
                 </LineChart>
               </ResponsiveContainer>
