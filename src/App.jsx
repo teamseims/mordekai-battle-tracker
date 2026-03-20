@@ -999,73 +999,142 @@ function seededRand(key, offset) {
   return ((h >>> 0) % 10000) / 10000;
 }
 
-// 6 distinct frame materials. Each controls all visual aspects of the frame + plaque.
+// 5 real-world frame materials (wood, metal). Each drives all frame + plaque styling.
 const FRAME_VARIANTS = [
   {
     id: "gold",
-    frameBg: "linear-gradient(135deg, #c8960a 0%, #e8b830 18%, #c09010 36%, #f0c840 54%, #b88010 72%, #d4a020 100%)",
-    framePad: 11, outerBorder: "2px solid #7a5c10",
-    innerLine: "1px solid rgba(255,215,0,0.28)", innerInset: 5,
-    shadow: "0 0 0 1px #a07010, 0 0 0 3px rgba(218,165,32,0.22), 0 8px 24px rgba(218,165,32,0.42), 0 18px 50px rgba(0,0,0,0.72), inset 0 1px 0 rgba(255,215,0,0.38), inset 0 -1px 0 rgba(100,70,0,0.55)",
-    glow: "rgba(218,165,32,0.38)", cornerBg:"#ffd700", cornerBorder:"#906000", cornerShape:"50%", cornerSize:9,
+    // Polished gilded wood — warm directional gradient + bright top/left bevel, dark bottom/right
+    frameBg: "linear-gradient(145deg, #e8c040 0%, #c89018 20%, #d8a828 40%, #f0c840 55%, #b87818 70%, #d09828 85%, #a07010 100%)",
+    framePad: 13, outerBorder: "2px solid #906010",
+    innerLine: "1px solid rgba(255,230,100,0.45)", innerInset: 6,
+    shadow: [
+      "0 0 0 1px #7a5010",
+      "inset 0 3px 2px rgba(255,250,160,0.70)",  "inset 3px 0 2px rgba(255,240,130,0.50)",
+      "inset 0 -3px 6px rgba(70,40,0,0.65)",      "inset -3px 0 6px rgba(80,45,0,0.50)",
+      "inset 0 0 20px rgba(0,0,0,0.22)",
+      "0 4px 14px rgba(0,0,0,0.55)", "0 10px 30px rgba(0,0,0,0.40)", "0 0 18px rgba(218,165,32,0.20)",
+    ].join(","),
+    glow: "rgba(218,165,32,0.35)",
+    cornerChar: "⚜", cornerColor: "rgba(255,240,120,0.90)", cornerFontSize: 13,
+    cornerShadow: "0 0 4px rgba(255,215,0,0.6), 0 1px 2px rgba(0,0,0,0.5)",
+    cornerRotations: [0,0,0,0],
     imageBg: "radial-gradient(ellipse at 35% 25%, #1e180a, #0d0b05)",
-    plaqueBg: "linear-gradient(180deg, #2a1e05, #1a1208)", plaqueBorder:"#c9a84c",
-    plaqueText:"#e8c050", chainColor:"#c9a84c", nameColor:"#ffd700", nameShadow:"0 0 9px rgba(218,165,32,0.55)",
+    plaqueBg: "linear-gradient(180deg, #2e2208 0%, #1e1608 50%, #141008 100%)",
+    plaqueBorder: "#c9a84c",
+    plaqueShadow: "0 4px 12px rgba(0,0,0,0.65), inset 0 1px 0 rgba(255,220,100,0.20), inset 0 -1px 0 rgba(60,35,0,0.50), inset 1px 0 0 rgba(200,160,60,0.15), inset -1px 0 0 rgba(60,35,0,0.30)",
+    plaqueText: "#d8b04a", chainColor: "#c9a84c", nameColor: "#ffd060",
+    nameShadow: "0 1px 0 rgba(80,50,0,0.70), 0 -1px 0 rgba(255,240,140,0.30), 0 0 8px rgba(218,165,32,0.40)",
   },
   {
     id: "wood",
-    frameBg: "repeating-linear-gradient(87deg, #4a2e10 0px, #6b4820 2px, #3a2208 5px, #5a3818 8px, #4a2e10 11px)",
-    framePad: 13, outerBorder: "2px solid #2a1808",
-    innerLine: "1px solid rgba(139,96,48,0.45)", innerInset: 6,
-    shadow: "0 0 0 1px #2a1808, 0 0 0 3px rgba(122,80,48,0.38), 0 8px 20px rgba(60,30,0,0.55), 0 18px 42px rgba(0,0,0,0.82), inset 0 1px 0 rgba(180,130,70,0.22), inset 0 -2px 4px rgba(0,0,0,0.6)",
-    glow: "rgba(92,61,30,0.45)", cornerBg:"#8b6030", cornerBorder:"#3a2010", cornerShape:"2px", cornerSize:8,
+    // Carved dark walnut — wood-grain stripes over dark brown, strong carved bevel
+    frameBg: [
+      "repeating-linear-gradient(2deg, rgba(0,0,0,0.06) 0px, transparent 3px, rgba(0,0,0,0.04) 7px, transparent 10px)",
+      "linear-gradient(160deg, #7a5028 0%, #5c3a18 20%, #4a2e10 45%, #3c2408 65%, #302008 85%, #3a2810 100%)",
+    ].join(","),
+    framePad: 14, outerBorder: "2px solid #1e1006",
+    innerLine: "1px solid rgba(160,110,60,0.40)", innerInset: 7,
+    shadow: [
+      "0 0 0 1px #150a04",
+      "inset 0 3px 3px rgba(180,120,55,0.50)",  "inset 3px 0 3px rgba(160,105,48,0.35)",
+      "inset 0 -4px 8px rgba(0,0,0,0.65)",       "inset -4px 0 8px rgba(0,0,0,0.45)",
+      "inset 0 0 24px rgba(0,0,0,0.30)",
+      "0 4px 14px rgba(0,0,0,0.65)", "0 10px 32px rgba(0,0,0,0.50)",
+    ].join(","),
+    glow: "rgba(120,80,30,0.30)",
+    cornerChar: "❧", cornerColor: "rgba(185,125,52,0.80)", cornerFontSize: 14,
+    cornerShadow: "0 1px 2px rgba(0,0,0,0.6), 0 0 3px rgba(160,100,40,0.3)",
+    cornerRotations: [0, 90, 270, 180],
     imageBg: "radial-gradient(ellipse at 35% 25%, #1e1408, #0d0a05)",
-    plaqueBg: "repeating-linear-gradient(87deg, #2a1808 0px, #3a2210 2px, #1a1005 5px, #2a1808 8px)", plaqueBorder:"#8b6030",
-    plaqueText:"#c49030", chainColor:"#7a5020", nameColor:"#d4a050", nameShadow:"0 0 6px rgba(140,90,0,0.42)",
+    plaqueBg: [
+      "repeating-linear-gradient(2deg, rgba(0,0,0,0.07) 0px, transparent 4px, rgba(0,0,0,0.04) 8px, transparent 12px)",
+      "linear-gradient(180deg, #3a2410 0%, #2a1808 50%, #1e1006 100%)",
+    ].join(","),
+    plaqueBorder: "#7a5828",
+    plaqueShadow: "0 4px 12px rgba(0,0,0,0.70), inset 0 1px 0 rgba(180,120,55,0.20), inset 0 -1px 0 rgba(0,0,0,0.55), inset 1px 0 0 rgba(140,90,40,0.12), inset -1px 0 0 rgba(0,0,0,0.35)",
+    plaqueText: "#c09038", chainColor: "#7a5020", nameColor: "#d4a048",
+    nameShadow: "0 1px 0 rgba(0,0,0,0.70), 0 -1px 0 rgba(200,150,60,0.20), 0 0 6px rgba(160,100,30,0.30)",
   },
   {
-    id: "silver",
-    frameBg: "linear-gradient(135deg, #5a6060 0%, #9aa8a8 18%, #687070 36%, #b0baba 54%, #606868 72%, #8a9898 100%)",
-    framePad: 11, outerBorder: "2px solid #404848",
-    innerLine: "1px solid rgba(180,200,200,0.22)", innerInset: 5,
-    shadow: "0 0 0 1px #404848, 0 0 0 2px rgba(150,170,170,0.22), 0 8px 20px rgba(60,80,80,0.4), 0 18px 42px rgba(0,0,0,0.78), inset 0 1px 0 rgba(200,220,220,0.28), inset 0 -1px 0 rgba(30,40,40,0.58)",
-    glow: "rgba(140,160,160,0.3)", cornerBg:"#b0c0c0", cornerBorder:"#4a5858", cornerShape:"50%", cornerSize:9,
+    id: "steel",
+    // Hammered steel — cool grey directional gradient, bright top highlight, dark recesses
+    frameBg: [
+      "repeating-linear-gradient(160deg, rgba(255,255,255,0.03) 0px, transparent 2px, rgba(255,255,255,0.02) 5px, transparent 7px)",
+      "linear-gradient(145deg, #8a9090 0%, #606868 18%, #707878 36%, #9aa0a0 52%, #585e5e 68%, #707878 82%, #4a5050 100%)",
+    ].join(","),
+    framePad: 13, outerBorder: "2px solid #333838",
+    innerLine: "1px solid rgba(200,210,210,0.20)", innerInset: 6,
+    shadow: [
+      "0 0 0 1px #2a2e2e",
+      "inset 0 2px 2px rgba(220,230,230,0.50)",  "inset 2px 0 2px rgba(200,215,215,0.35)",
+      "inset 0 -3px 6px rgba(10,15,15,0.60)",    "inset -3px 0 6px rgba(15,20,20,0.45)",
+      "inset 0 0 20px rgba(0,0,0,0.28)",
+      "0 4px 14px rgba(0,0,0,0.60)", "0 10px 30px rgba(0,0,0,0.45)",
+    ].join(","),
+    glow: "rgba(140,160,160,0.20)",
+    cornerChar: "✦", cornerColor: "rgba(205,220,220,0.72)", cornerFontSize: 12,
+    cornerShadow: "0 1px 2px rgba(0,0,0,0.7), 0 0 4px rgba(180,200,200,0.2)",
+    cornerRotations: [0,0,0,0],
     imageBg: "radial-gradient(ellipse at 35% 25%, #141a1a, #090d0d)",
-    plaqueBg: "linear-gradient(180deg, #161e1e, #0d1414)", plaqueBorder:"#6a8080",
-    plaqueText:"#90a8a8", chainColor:"#7a9090", nameColor:"#b8d0d0", nameShadow:"0 0 6px rgba(140,180,180,0.4)",
+    plaqueBg: "linear-gradient(180deg, #1e2424 0%, #141a1a 50%, #0e1212 100%)",
+    plaqueBorder: "#587070",
+    plaqueShadow: "0 4px 12px rgba(0,0,0,0.70), inset 0 1px 0 rgba(200,220,220,0.15), inset 0 -1px 0 rgba(0,0,0,0.60), inset 1px 0 0 rgba(180,200,200,0.10), inset -1px 0 0 rgba(0,0,0,0.40)",
+    plaqueText: "#8aa8a8", chainColor: "#6a8888", nameColor: "#b0cccc",
+    nameShadow: "0 1px 0 rgba(0,0,0,0.80), 0 -1px 0 rgba(200,220,220,0.15), 0 0 6px rgba(140,180,180,0.30)",
   },
   {
     id: "bronze",
-    frameBg: "linear-gradient(135deg, #6a3a18 0%, #8b5228 18%, #3a5030 36%, #7a4820 54%, #4a5832 72%, #6a3c1a 100%)",
-    framePad: 12, outerBorder: "2px solid #252015",
-    innerLine: "1px solid rgba(140,100,48,0.38)", innerInset: 5,
-    shadow: "0 0 0 1px #252015, 0 0 0 2px rgba(106,60,24,0.38), 0 8px 20px rgba(70,50,15,0.5), 0 18px 42px rgba(0,0,0,0.82), inset 0 1px 0 rgba(160,120,60,0.22), inset 0 -1px 0 rgba(20,15,5,0.68)",
-    glow: "rgba(100,70,25,0.45)", cornerBg:"#8b7040", cornerBorder:"#3a2810", cornerShape:"2px", cornerSize:8,
+    // Aged bronze with green-copper patina — warm copper highlights, green-tinged shadows
+    frameBg: "linear-gradient(145deg, #9a7038 0%, #7a5228 18%, #4a6030 35%, #7a4820 55%, #3a4e28 70%, #6a4018 85%, #4a3018 100%)",
+    framePad: 13, outerBorder: "2px solid #202015",
+    innerLine: "1px solid rgba(160,120,55,0.35)", innerInset: 6,
+    shadow: [
+      "0 0 0 1px #1a1a10",
+      "inset 0 3px 2px rgba(180,140,75,0.45)",  "inset 3px 0 2px rgba(160,125,65,0.32)",
+      "inset 0 -3px 7px rgba(10,20,10,0.60)",   "inset -3px 0 7px rgba(15,25,12,0.45)",
+      "inset 0 0 22px rgba(10,18,8,0.30)",
+      "0 4px 14px rgba(0,0,0,0.65)", "0 10px 32px rgba(0,0,0,0.48)",
+    ].join(","),
+    glow: "rgba(120,90,30,0.30)",
+    cornerChar: "❋", cornerColor: "rgba(185,148,65,0.75)", cornerFontSize: 13,
+    cornerShadow: "0 1px 2px rgba(0,0,0,0.6), 0 0 3px rgba(160,120,50,0.25)",
+    cornerRotations: [0,0,0,0],
     imageBg: "radial-gradient(ellipse at 35% 25%, #181408, #0d0a04)",
-    plaqueBg: "linear-gradient(180deg, #181608, #0d0c05)", plaqueBorder:"#7a6030",
-    plaqueText:"#a08040", chainColor:"#7a5030", nameColor:"#c09848", nameShadow:"0 0 6px rgba(150,110,35,0.45)",
+    plaqueBg: "linear-gradient(180deg, #1e1c08 0%, #141208 50%, #0e0e06 100%)",
+    plaqueBorder: "#6a5828",
+    plaqueShadow: "0 4px 12px rgba(0,0,0,0.70), inset 0 1px 0 rgba(180,145,60,0.18), inset 0 -1px 0 rgba(0,0,0,0.55), inset 1px 0 0 rgba(160,130,55,0.10), inset -1px 0 0 rgba(0,0,0,0.40)",
+    plaqueText: "#a08038", chainColor: "#7a5830", nameColor: "#c09848",
+    nameShadow: "0 1px 0 rgba(0,0,0,0.75), 0 -1px 0 rgba(200,160,70,0.18), 0 0 6px rgba(150,110,35,0.35)",
   },
   {
     id: "gilded",
-    frameBg: "linear-gradient(135deg, #a06808 0%, #dca018 12%, #b07810 24%, #f8d040 36%, #c09010 48%, #e8b020 60%, #b07808 72%, #d8a818 84%, #a06808 100%)",
-    framePad: 14, outerBorder: "2px solid #705008",
-    innerLine: "1px solid rgba(255,215,0,0.38)", innerInset: 7,
-    shadow: "0 0 0 1px #705008, 0 0 0 3px rgba(218,165,32,0.32), 0 0 0 5px rgba(120,85,0,0.14), 0 10px 28px rgba(218,165,32,0.55), 0 20px 55px rgba(0,0,0,0.78), inset 0 1px 0 rgba(255,230,80,0.48), inset 0 -1px 0 rgba(90,60,0,0.58)",
-    glow: "rgba(218,165,32,0.52)", cornerBg:"#ffe066", cornerBorder:"#806000", cornerShape:"50%", cornerSize:11,
+    // Royal gilded — dense shimmering gold with diagonal filigree overlay, larger ⚜ corners
+    frameBg: [
+      "repeating-linear-gradient(45deg, rgba(255,230,100,0.07) 0px, transparent 3px, rgba(255,200,50,0.05) 6px, transparent 9px)",
+      "linear-gradient(135deg, #c49010 0%, #e8c030 12%, #b08010 24%, #f0d040 36%, #c09018 48%, #e8c030 60%, #a87808 72%, #d8a820 84%, #b08010 100%)",
+    ].join(","),
+    framePad: 15, outerBorder: "2px solid #7a5808",
+    innerLine: "1px solid rgba(255,230,100,0.50)", innerInset: 8,
+    shadow: [
+      "0 0 0 1px #604808", "0 0 0 4px rgba(218,165,32,0.25)",
+      "inset 0 3px 3px rgba(255,250,160,0.75)",  "inset 3px 0 3px rgba(255,240,130,0.55)",
+      "inset 0 -4px 8px rgba(60,35,0,0.70)",     "inset -4px 0 8px rgba(70,42,0,0.55)",
+      "inset 0 0 22px rgba(0,0,0,0.20)",
+      "0 0 14px rgba(218,165,32,0.25)", "0 6px 18px rgba(0,0,0,0.60)", "0 12px 36px rgba(0,0,0,0.45)",
+    ].join(","),
+    glow: "rgba(218,165,32,0.45)",
+    cornerChar: "⚜", cornerColor: "rgba(255,248,145,0.95)", cornerFontSize: 17,
+    cornerShadow: "0 0 7px rgba(255,215,0,0.75), 0 1px 2px rgba(0,0,0,0.5)",
+    cornerRotations: [0,0,0,0],
     imageBg: "radial-gradient(ellipse at 35% 25%, #201a08, #0d0b04)",
-    plaqueBg: "linear-gradient(180deg, #302005, #1e1508)", plaqueBorder:"#daa520",
-    plaqueText:"#ffd700", chainColor:"#daa520", nameColor:"#fff5a0", nameShadow:"0 0 11px rgba(255,215,0,0.65)",
-  },
-  {
-    id: "obsidian",
-    frameBg: "linear-gradient(135deg, #18101e 0%, #2a1535 18%, #120d18 36%, #2c1838 54%, #160e20 72%, #1e1228 100%)",
-    framePad: 11, outerBorder: "2px solid #080610",
-    innerLine: "1px solid rgba(130,80,180,0.32)", innerInset: 5,
-    shadow: "0 0 0 1px #080610, 0 0 0 2px rgba(120,60,160,0.28), 0 8px 24px rgba(80,40,110,0.45), 0 18px 46px rgba(0,0,0,0.88), inset 0 1px 0 rgba(160,100,220,0.18), inset 0 -1px 0 rgba(10,5,15,0.68)",
-    glow: "rgba(120,60,160,0.42)", cornerBg:"#9060c8", cornerBorder:"#381858", cornerShape:"50%", cornerSize:9,
-    imageBg: "radial-gradient(ellipse at 35% 25%, #120a16, #07050a)",
-    plaqueBg: "linear-gradient(180deg, #180a22, #0e0818)", plaqueBorder:"#6a40a8",
-    plaqueText:"#9060c0", chainColor:"#582e88", nameColor:"#c090e8", nameShadow:"0 0 9px rgba(160,80,220,0.58)",
+    plaqueBg: [
+      "repeating-linear-gradient(45deg, rgba(255,220,80,0.04) 0px, transparent 4px, rgba(255,200,50,0.03) 8px, transparent 12px)",
+      "linear-gradient(180deg, #302408 0%, #201808 50%, #180e06 100%)",
+    ].join(","),
+    plaqueBorder: "#c9a010",
+    plaqueShadow: "0 4px 14px rgba(0,0,0,0.70), inset 0 1px 0 rgba(255,220,80,0.25), inset 0 -1px 0 rgba(60,35,0,0.55), inset 1px 0 0 rgba(220,180,60,0.18), inset -1px 0 0 rgba(60,35,0,0.35), 0 0 8px rgba(218,165,32,0.15)",
+    plaqueText: "#e8c050", chainColor: "#c9a820", nameColor: "#fff080",
+    nameShadow: "0 1px 0 rgba(80,50,0,0.75), 0 -1px 0 rgba(255,245,140,0.35), 0 0 10px rgba(218,165,32,0.50)",
   },
 ];
 
@@ -1108,7 +1177,8 @@ function TrophyRoom({ battles, players, trophyImages, setTrophyImages, trophyMet
         <span style={{ fontSize:11, fontWeight:700, fontFamily:"'MedievalSharp', cursive", letterSpacing:2, color:"#8b7355", textTransform:"uppercase" }}>☠ Trophies of the Fallen ☠</span>
         <div style={{ margin:"8px auto 0", width:240, height:1, background:"linear-gradient(90deg, transparent, #5c4a32, transparent)" }} />
       </div>
-      <div style={{ display:"flex", flexWrap:"wrap", gap:36, padding:"10px 4px 48px", justifyContent:"center", alignItems:"flex-end" }}>
+      {/* Gallery wall — dark stone texture via layered radial + repeating-linear gradients */}
+      <div style={{ display:"flex", flexWrap:"wrap", gap:44, padding:"36px 24px 56px", justifyContent:"center", alignItems:"flex-end", background:["radial-gradient(ellipse 80% 60% at 22% 38%, rgba(45,35,20,0.55), transparent)","radial-gradient(ellipse 65% 75% at 78% 65%, rgba(38,28,16,0.45), transparent)","repeating-linear-gradient(0deg, transparent, transparent 46px, rgba(0,0,0,0.022) 46px, rgba(0,0,0,0.022) 47px)","repeating-linear-gradient(90deg, transparent, transparent 68px, rgba(0,0,0,0.016) 68px, rgba(0,0,0,0.016) 69px)","linear-gradient(180deg, #1c1710 0%, #141008 100%)"].join(","), borderRadius:8, border:"1px solid #2a2018", boxShadow:"inset 0 0 100px rgba(0,0,0,0.35), inset 0 0 30px rgba(0,0,0,0.20)", marginTop:8 }}>
         {trophies.map((t) => {
           const r1 = seededRand(t.key, 1); // size
           const r2 = seededRand(t.key, 2); // rotation
@@ -1120,7 +1190,7 @@ function TrophyRoom({ battles, players, trophyImages, setTrophyImages, trophyMet
           const dims = { sm:{imgW:136,imgH:194}, md:{imgW:170,imgH:242}, lg:{imgW:208,imgH:298} }[sizeTier];
           const nameSize = { sm:10, md:12, lg:14 }[sizeTier];
 
-          const rotate = ((r2 * 10) - 5).toFixed(2);
+          const rotate = ((r2 * 6) - 3).toFixed(2);
           const fv = FRAME_VARIANTS[Math.floor(r3 * FRAME_VARIANTS.length)];
           const placeholder = TROPHY_PLACEHOLDERS[Math.floor(r7 * TROPHY_PLACEHOLDERS.length)];
           const playerColor = PLAYER_COLORS[players.indexOf(t.player) % PLAYER_COLORS.length];
@@ -1136,9 +1206,9 @@ function TrophyRoom({ battles, players, trophyImages, setTrophyImages, trophyMet
               <div style={{ background:fv.frameBg, padding:fv.framePad, border:fv.outerBorder, borderRadius:4, boxShadow:fv.shadow, position:"relative" }}>
                 {/* Inner filigree border */}
                 <div style={{ position:"absolute", inset:fv.innerInset, border:fv.innerLine, borderRadius:2, pointerEvents:"none", zIndex:3 }} />
-                {/* Corner ornaments on the frame material */}
-                {[{top:3,left:3},{top:3,right:3},{bottom:3,left:3},{bottom:3,right:3}].map((pos, ci) => (
-                  <div key={ci} style={{ position:"absolute", ...pos, width:fv.cornerSize, height:fv.cornerSize, background:`radial-gradient(circle, ${fv.cornerBg}, ${fv.cornerBg}77)`, border:`1px solid ${fv.cornerBorder}`, borderRadius:fv.cornerShape, zIndex:4, pointerEvents:"none", boxShadow:`0 0 5px ${fv.cornerBg}66` }} />
+                {/* Corner ornaments — Unicode decorative characters matching each material */}
+                {[{top:0,left:2},{top:0,right:2},{bottom:0,left:2},{bottom:0,right:2}].map((pos, ci) => (
+                  <div key={ci} style={{ position:"absolute", ...pos, zIndex:4, pointerEvents:"none", fontSize:fv.cornerFontSize, color:fv.cornerColor, textShadow:fv.cornerShadow, lineHeight:1, userSelect:"none", fontFamily:"serif", transform:`rotate(${(fv.cornerRotations||[0,0,0,0])[ci]}deg)` }}>{fv.cornerChar}</div>
                 ))}
 
                 {/* Portrait canvas */}
@@ -1182,7 +1252,7 @@ function TrophyRoom({ battles, players, trophyImages, setTrophyImages, trophyMet
               </div>
 
               {/* ── Material-matched plaque ── */}
-              <div style={{ width:plaqueW, background:fv.plaqueBg, border:`1px solid ${fv.plaqueBorder}`, borderRadius:4, padding:"9px 12px 11px", textAlign:"center", boxShadow:`0 5px 18px rgba(0,0,0,0.68), inset 0 1px 0 ${fv.plaqueBorder}22, inset 0 -1px 0 rgba(0,0,0,0.42)` }}>
+              <div style={{ width:plaqueW, background:fv.plaqueBg, border:`1px solid ${fv.plaqueBorder}`, borderRadius:4, padding:"9px 12px 11px", textAlign:"center", boxShadow:fv.plaqueShadow }}>
                 <div style={{ fontSize:nameSize, fontWeight:700, color:fv.nameColor, fontFamily:"'MedievalSharp', cursive", letterSpacing:0.5, marginBottom:5, wordBreak:"break-word", textShadow:fv.nameShadow }}>{t.name}</div>
                 <div style={{ fontSize:9, color:fv.plaqueText, fontFamily:"'Spectral', serif", lineHeight:1.7, opacity:0.88 }}>
                   Slain by{" "}<span style={{ color:playerColor, fontWeight:700, opacity:1 }}>{t.player}</span><br />
