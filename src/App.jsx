@@ -19,6 +19,24 @@ const DMG_TYPES = ["Slashing","Piercing","Bludgeoning","Fire","Cold","Lightning"
 const DMG_TYPE_COLORS = { Slashing:"#d4442a", Piercing:"#c17f3a", Bludgeoning:"#8b7355", Fire:"#e85d04", Cold:"#4fc3f7", Lightning:"#ffd54f", Thunder:"#9575cd", Poison:"#66bb6a", Acid:"#aed581", Necrotic:"#7e57c2", Radiant:"#fff176", Force:"#80deea", Psychic:"#f48fb1" };
 const DEFAULT_PLAYERS = ["King Gizzard", "Lucien", "Shio", "Kazzak", "Fazula"];
 
+const TROPHY_PLACEHOLDERS = [
+  "No artist dared capture its likeness",
+  "The bards refuse to describe this one",
+  "Its visage has been lost to the ages",
+  "Even the court painter fled in terror",
+  "Some horrors are best left unillustrated",
+  "The sketch artist fainted mid-drawing",
+  "This portrait was consumed by dragonfire",
+  "Witnesses could only describe the smell",
+  "The illustrator demanded hazard pay and quit",
+  "Legend says the mirror cracked when it looked",
+  "A thousand gold bounty and no portrait to show",
+  "The Royal Chronicler simply wrote: 'no'",
+  "Its form defies parchment and ink alike",
+  "Three painters attempted. None returned",
+  "The guild of artists unanimously declined",
+];
+
 function generateId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 
 // Unique ID for this browser tab. Used to suppress realtime echoes of our own saves.
@@ -968,32 +986,147 @@ function Dashboard({ battles, players, filterPlayer, filterBattle, filterRound, 
         </>
       )}
 
-      {/* ── Trophy Wall ── */}
-      {trophyWall.length > 0 && (
-        <>
-          <Divider />
-          <SectionTitle icon="☠">Trophy Wall</SectionTitle>
-          <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:16 }}>
-            {trophyWall.map((k, i) => (
-              <div key={i} style={{ display:"flex", alignItems:"center", gap:14, padding:"10px 16px", background:"linear-gradient(90deg, #1a1208 0%, #110d04 60%, #0d0b09 100%)", border:"1px solid #3a2800", borderRadius:6, boxShadow:"0 0 12px rgba(218,165,32,0.07), inset 0 1px 0 rgba(218,165,32,0.06)" }}>
-                <span style={{ fontSize:22, color:"#daa520", flexShrink:0, textShadow:"0 0 12px rgba(218,165,32,0.6)" }}>☠</span>
-                <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ fontSize:14, fontWeight:700, color:"#daa520", fontFamily:"'MedievalSharp', cursive", letterSpacing:0.5, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{k.name}</div>
-                  <div style={{ fontSize:11, color:"#5c4a32", fontFamily:"'Spectral', serif", marginTop:2 }}>
-                    Slain by{" "}
-                    <span style={{ color: PLAYER_COLORS[players.indexOf(k.player) % PLAYER_COLORS.length], fontWeight:700 }}>{k.player}</span>
-                    <span style={{ color:"#3a3020" }}> · </span>
-                    <span style={{ color:"#8b7355", fontStyle:"italic" }}>{k.encounter}</span>
-                    <span style={{ color:"#3a3020" }}> · </span>
-                    <span style={{ color:"#5c4a32" }}>Round {k.round}</span>
-                  </div>
+    </div>
+  );
+}
+
+/* ─── Trophy Room ─── */
+// Deterministic pseudo-random seeded from a string key + numeric offset.
+function seededRand(key, offset) {
+  let h = offset >>> 0;
+  for (let i = 0; i < key.length; i++) h = (Math.imul(31, h) + key.charCodeAt(i)) | 0;
+  h ^= h >>> 16; h = Math.imul(h, 0x45d9f3b); h ^= h >>> 16;
+  return ((h >>> 0) % 10000) / 10000;
+}
+
+const FRAME_VARIANTS = [
+  { outer:"#c9a84c", inner:"#7a5c1e", glow:"rgba(201,168,76,0.45)" },   // gilded gold
+  { outer:"#6b4c2a", inner:"#3a2010", glow:"rgba(107,76,42,0.5)" },     // dark wood
+  { outer:"#7a8a7a", inner:"#3a4a3a", glow:"rgba(100,120,100,0.3)" },   // verdigris silver
+  { outer:"#922020", inner:"#4a1010", glow:"rgba(146,32,32,0.45)" },    // crimson lacquer
+];
+
+function TrophyRoom({ battles, players, trophyImages, setTrophyImages }) {
+  const [editingKey, setEditingKey] = useState(null);
+  const [urlInput, setUrlInput] = useState("");
+
+  const trophies = useMemo(() => {
+    const kills = [];
+    battles.forEach((b) => {
+      players.forEach((p) => {
+        for (let r = 1; r <= b.rounds; r++) {
+          (b.namedKills?.[p]?.[r] || []).forEach((k) => {
+            kills.push({ key:`${p}::${b.name}::${r}::${k.name}`, name:k.name, player:p, encounter:b.name, round:r, battleOrder:battles.indexOf(b) });
+          });
+        }
+      });
+    });
+    kills.sort((a, bx) => a.battleOrder - bx.battleOrder || a.round - bx.round);
+    return kills;
+  }, [battles, players]);
+
+  if (trophies.length === 0) {
+    return (
+      <ParchmentPanel style={{ textAlign:"center", padding:40 }}>
+        <D20Icon size={48} color="#3a3020" />
+        <p style={{ color:"#5c4a32", fontSize:14, marginTop:12, fontFamily:"'Spectral', serif", fontStyle:"italic" }}>
+          No named kills yet.<br />The Trophy Room awaits your first conquest.
+        </p>
+      </ParchmentPanel>
+    );
+  }
+
+  const commitUrl = (key) => {
+    setTrophyImages((prev) => ({ ...prev, [key]: urlInput.trim() }));
+    setEditingKey(null);
+  };
+
+  return (
+    <div>
+      <div style={{ textAlign:"center", marginBottom:24 }}>
+        <span style={{ fontSize:11, fontWeight:700, fontFamily:"'MedievalSharp', cursive", letterSpacing:2, color:"#8b7355", textTransform:"uppercase" }}>
+          ☠ Trophies of the Fallen ☠
+        </span>
+        <div style={{ margin:"8px auto 0", width:240, height:1, background:"linear-gradient(90deg, transparent, #5c4a32, transparent)" }} />
+      </div>
+      {/* Masonry-style gallery wall */}
+      <div style={{ display:"flex", flexWrap:"wrap", gap:28, padding:"10px 0 30px", justifyContent:"center", alignItems:"flex-end" }}>
+        {trophies.map((t) => {
+          const r1 = seededRand(t.key, 1);
+          const r2 = seededRand(t.key, 2);
+          const r3 = seededRand(t.key, 3);
+          const r7 = seededRand(t.key, 7);
+
+          // Frame size: ~33% small, ~40% medium, ~27% large
+          const sizeTier = r1 < 0.33 ? "sm" : r1 < 0.73 ? "md" : "lg";
+          const dims = { sm:{ w:148, imgH:110 }, md:{ w:192, imgH:148 }, lg:{ w:236, imgH:188 } }[sizeTier];
+          const nameSize = sizeTier === "sm" ? 9 : sizeTier === "md" ? 11 : 13;
+
+          // Rotation: -5 to +5 deg, with slight bias toward smaller angles
+          const rotate = ((r2 * 10) - 5).toFixed(2);
+          const fv = FRAME_VARIANTS[Math.floor(r3 * 4)];
+          const placeholder = TROPHY_PLACEHOLDERS[Math.floor(r7 * TROPHY_PLACEHOLDERS.length)];
+          const playerColor = PLAYER_COLORS[players.indexOf(t.player) % PLAYER_COLORS.length];
+          const imgUrl = trophyImages?.[t.key] || "";
+          const isEditing = editingKey === t.key;
+
+          return (
+            <div key={t.key} style={{ transform:`rotate(${rotate}deg)`, transformOrigin:"center bottom", flexShrink:0, display:"flex", flexDirection:"column", alignItems:"center" }}>
+              {/* ── Portrait frame ── */}
+              <div style={{ width:dims.w, border:`7px solid ${fv.outer}`, outline:`3px solid ${fv.inner}`, outlineOffset:-1, borderRadius:3, boxShadow:`0 0 0 1px ${fv.outer}33, 0 0 24px ${fv.glow}, 0 6px 32px rgba(0,0,0,0.8), inset 0 0 12px rgba(0,0,0,0.6)`, background:"linear-gradient(160deg, #1e1810, #0d0b09)", position:"relative", overflow:"hidden" }}>
+                {/* Inner filigree line */}
+                <div style={{ position:"absolute", inset:5, border:`1px solid ${fv.outer}55`, borderRadius:1, pointerEvents:"none", zIndex:3 }} />
+                {/* Corner ornaments */}
+                {["0 0","0 auto","auto 0","auto auto"].map((pos, ci) => (
+                  <div key={ci} style={{ position:"absolute", top:pos.split(" ")[0] === "0" ? 4 : "auto", bottom:pos.split(" ")[0] === "auto" ? 4 : "auto", left:pos.split(" ")[1] === "0" ? 4 : "auto", right:pos.split(" ")[1] === "auto" ? 4 : "auto", width:10, height:10, border:`1px solid ${fv.outer}`, borderRadius:"50%", background:`radial-gradient(circle, ${fv.outer}88, transparent)`, zIndex:4, pointerEvents:"none" }} />
+                ))}
+
+                {/* Image / placeholder area */}
+                <div style={{ height:dims.imgH, position:"relative", overflow:"hidden" }}>
+                  {imgUrl ? (
+                    <img src={imgUrl} alt={t.name} style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} onError={(e) => { e.target.style.display="none"; }} />
+                  ) : (
+                    <div style={{ height:"100%", display:"flex", alignItems:"center", justifyContent:"center", padding:14, background:"radial-gradient(ellipse at center, #110d07, #0a0805)" }}>
+                      <p style={{ color:`${fv.outer}55`, fontFamily:"'Spectral', serif", fontStyle:"italic", fontSize:9, textAlign:"center", lineHeight:1.6, margin:0 }}>{placeholder}</p>
+                    </div>
+                  )}
+                  {/* Add/change art button */}
+                  <button onClick={() => { setEditingKey(isEditing ? null : t.key); setUrlInput(imgUrl); }}
+                    style={{ position:"absolute", bottom:5, right:5, background:"rgba(10,8,5,0.88)", border:`1px solid ${fv.outer}88`, borderRadius:3, color:fv.outer, padding:"2px 7px", fontSize:8, cursor:"pointer", fontFamily:"'MedievalSharp', cursive", letterSpacing:0.5, zIndex:5, opacity:0.85, transition:"opacity .15s" }}
+                    onMouseEnter={(e) => e.currentTarget.style.opacity="1"} onMouseLeave={(e) => e.currentTarget.style.opacity="0.85"}>
+                    {imgUrl ? "✦ art" : "+ art"}
+                  </button>
                 </div>
-                <div style={{ fontSize:11, color:"#3a2800", fontFamily:"'MedievalSharp', cursive", flexShrink:0 }}>R{k.round}</div>
+
+                {/* URL input panel */}
+                {isEditing && (
+                  <div style={{ padding:"7px 8px", background:"#0a0805", borderTop:`1px solid ${fv.inner}` }}>
+                    <input autoFocus value={urlInput} onChange={(e) => setUrlInput(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") commitUrl(t.key); if (e.key === "Escape") setEditingKey(null); }}
+                      placeholder="Paste image URL…"
+                      style={{ width:"100%", background:"#0d0b09", border:`1px solid ${fv.outer}88`, borderRadius:3, color:"#c4a97d", padding:"4px 6px", fontSize:9, fontFamily:"'Spectral', serif", boxSizing:"border-box" }} />
+                    <div style={{ display:"flex", gap:4, marginTop:5 }}>
+                      <button onClick={() => commitUrl(t.key)} style={{ flex:1, background:"#1a1510", border:`1px solid ${fv.outer}`, borderRadius:3, color:fv.outer, padding:"3px 0", fontSize:9, cursor:"pointer", fontFamily:"'MedievalSharp', cursive" }}>✓ Hang it</button>
+                      <button onClick={() => setEditingKey(null)} style={{ background:"#1a1510", border:"1px solid #3a3020", borderRadius:3, color:"#5c4a32", padding:"3px 8px", fontSize:9, cursor:"pointer", fontFamily:"'MedievalSharp', cursive" }}>✕</button>
+                    </div>
+                  </div>
+                )}
               </div>
-            ))}
-          </div>
-        </>
-      )}
+
+              {/* ── Plaque ── */}
+              <div style={{ width:dims.w - 16, background:"linear-gradient(180deg, #2a1e0a 0%, #1a1208 100%)", border:`1px solid ${fv.outer}99`, borderTop:"none", padding:"7px 10px 9px", textAlign:"center", borderRadius:"0 0 4px 4px", boxShadow:`0 5px 14px rgba(0,0,0,0.6), inset 0 1px 0 ${fv.outer}22` }}>
+                <div style={{ fontSize:nameSize, fontWeight:700, color:"#daa520", fontFamily:"'MedievalSharp', cursive", letterSpacing:0.5, marginBottom:4, wordBreak:"break-word" }}>{t.name}</div>
+                <div style={{ fontSize:8, color:"#8b7355", fontFamily:"'Spectral', serif", lineHeight:1.6 }}>
+                  Slain by <span style={{ color:playerColor, fontWeight:700 }}>{t.player}</span><br />
+                  <span style={{ color:"#5c4a32", fontStyle:"italic" }}>{t.encounter}</span>
+                  <span style={{ color:"#3a2800" }}> · </span>
+                  <span style={{ color:"#5c4a32" }}>Round {t.round}</span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -1068,6 +1201,7 @@ export default function App() {
   const [showNewBattle, setShowNewBattle] = useState(false);
   const [syncStatus, setSyncStatus] = useState("idle"); // "saving" | "saved" | "error"
   const [playerDefaults, setPlayerDefaults] = useState({}); // { [player]: default DMG type }
+  const [trophyImages, setTrophyImages] = useState({});    // { [trophyKey]: imageUrl }
 
   // Wire the module-level save callback to this component's state setter.
   const setSyncRef = useRef(setSyncStatus);
@@ -1075,10 +1209,10 @@ export default function App() {
   useEffect(() => { _onSyncChange = (s) => setSyncRef.current(s); return () => { _onSyncChange = null; }; }, []);
 
   // Load state on mount.
-  useEffect(() => { loadState().then((s) => { if (s) { setPlayers(s.players || DEFAULT_PLAYERS); setBattles(s.battles || []); setActiveBattleIdx(s.activeBattleIdx || 0); setPlayerDefaults(s.playerDefaults || {}); } setLoaded(true); }); }, []);
+  useEffect(() => { loadState().then((s) => { if (s) { setPlayers(s.players || DEFAULT_PLAYERS); setBattles(s.battles || []); setActiveBattleIdx(s.activeBattleIdx || 0); setPlayerDefaults(s.playerDefaults || {}); setTrophyImages(s.trophyImages || {}); } setLoaded(true); }); }, []);
 
   // Save whenever state changes (debounced in saveState for Supabase).
-  useEffect(() => { if (loaded) saveState({ players, battles, activeBattleIdx, playerDefaults }); }, [players, battles, activeBattleIdx, playerDefaults, loaded]);
+  useEffect(() => { if (loaded) saveState({ players, battles, activeBattleIdx, playerDefaults, trophyImages }); }, [players, battles, activeBattleIdx, playerDefaults, trophyImages, loaded]);
 
   // Subscribe to realtime changes from other users.
   useEffect(() => {
@@ -1093,6 +1227,7 @@ export default function App() {
         setBattles(s.battles || []);
         setActiveBattleIdx(s.activeBattleIdx ?? 0);
         setPlayerDefaults(s.playerDefaults || {});
+        setTrophyImages(s.trophyImages || {});
       })
       .subscribe();
     return () => supabase.removeChannel(channel);
@@ -1146,7 +1281,7 @@ export default function App() {
     }));
   };
 
-  const handleReset = () => { if (confirm("Obliterate all data? No resurrection!")) { setPlayers(DEFAULT_PLAYERS); setBattles([]); setActiveBattleIdx(0); setPlayerDefaults({}); setTab("entry"); } };
+  const handleReset = () => { if (confirm("Obliterate all data? No resurrection!")) { setPlayers(DEFAULT_PLAYERS); setBattles([]); setActiveBattleIdx(0); setPlayerDefaults({}); setTrophyImages({}); setTab("entry"); } };
 
   const handleExport = () => {
     const escape = (v) => `"${String(v).replace(/"/g, '""')}"`;
@@ -1289,7 +1424,7 @@ export default function App() {
 
       {/* Tabs */}
       <div style={{ display:"flex", justifyContent:"center", gap:0, marginBottom:18, borderBottom:"1px solid #2a2018" }}>
-        {[{ id:"entry", label:"⚔ Battle Log", emoji:"" }, { id:"dashboard", label:"📊 War Room", emoji:"" }, { id:"settings", label:"⚙ Party", emoji:"" }].map((t) => (
+        {[{ id:"entry", label:"⚔ Battle Log" }, { id:"dashboard", label:"📊 War Room" }, { id:"trophy", label:"🏆 Trophy Room" }, { id:"settings", label:"⚙ Party" }].map((t) => (
           <button key={t.id} onClick={() => setTab(t.id)} style={{
             background: tab === t.id ? "linear-gradient(180deg, #2a2018, transparent)" : "transparent",
             border:"none", borderBottom: tab === t.id ? "2px solid #daa520" : "2px solid transparent",
@@ -1343,6 +1478,8 @@ export default function App() {
           : <Dashboard battles={battles} players={players} filterPlayer={filterPlayer} filterBattle={filterBattle} filterRound={filterRound}
               setFilterPlayer={setFilterPlayer} setFilterBattle={setFilterBattle} setFilterRound={setFilterRound} />
       )}
+
+      {tab === "trophy" && <TrophyRoom battles={battles} players={players} trophyImages={trophyImages} setTrophyImages={setTrophyImages} />}
 
       {tab === "settings" && <Settings players={players} setPlayers={handleSetPlayers} onReset={handleReset} onExport={handleExport} onImport={handleImport} playerDefaults={playerDefaults} setPlayerDefaults={setPlayerDefaults} />}
 
