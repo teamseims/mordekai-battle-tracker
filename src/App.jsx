@@ -999,14 +999,77 @@ function seededRand(key, offset) {
   return ((h >>> 0) % 10000) / 10000;
 }
 
+// 6 distinct frame materials. Each controls all visual aspects of the frame + plaque.
 const FRAME_VARIANTS = [
-  { outer:"#c9a84c", inner:"#7a5c1e", glow:"rgba(201,168,76,0.45)" },   // gilded gold
-  { outer:"#6b4c2a", inner:"#3a2010", glow:"rgba(107,76,42,0.5)" },     // dark wood
-  { outer:"#7a8a7a", inner:"#3a4a3a", glow:"rgba(100,120,100,0.3)" },   // verdigris silver
-  { outer:"#922020", inner:"#4a1010", glow:"rgba(146,32,32,0.45)" },    // crimson lacquer
+  {
+    id: "gold",
+    frameBg: "linear-gradient(135deg, #c8960a 0%, #e8b830 18%, #c09010 36%, #f0c840 54%, #b88010 72%, #d4a020 100%)",
+    framePad: 11, outerBorder: "2px solid #7a5c10",
+    innerLine: "1px solid rgba(255,215,0,0.28)", innerInset: 5,
+    shadow: "0 0 0 1px #a07010, 0 0 0 3px rgba(218,165,32,0.22), 0 8px 24px rgba(218,165,32,0.42), 0 18px 50px rgba(0,0,0,0.72), inset 0 1px 0 rgba(255,215,0,0.38), inset 0 -1px 0 rgba(100,70,0,0.55)",
+    glow: "rgba(218,165,32,0.38)", cornerBg:"#ffd700", cornerBorder:"#906000", cornerShape:"50%", cornerSize:9,
+    imageBg: "radial-gradient(ellipse at 35% 25%, #1e180a, #0d0b05)",
+    plaqueBg: "linear-gradient(180deg, #2a1e05, #1a1208)", plaqueBorder:"#c9a84c",
+    plaqueText:"#e8c050", chainColor:"#c9a84c", nameColor:"#ffd700", nameShadow:"0 0 9px rgba(218,165,32,0.55)",
+  },
+  {
+    id: "wood",
+    frameBg: "repeating-linear-gradient(87deg, #4a2e10 0px, #6b4820 2px, #3a2208 5px, #5a3818 8px, #4a2e10 11px)",
+    framePad: 13, outerBorder: "2px solid #2a1808",
+    innerLine: "1px solid rgba(139,96,48,0.45)", innerInset: 6,
+    shadow: "0 0 0 1px #2a1808, 0 0 0 3px rgba(122,80,48,0.38), 0 8px 20px rgba(60,30,0,0.55), 0 18px 42px rgba(0,0,0,0.82), inset 0 1px 0 rgba(180,130,70,0.22), inset 0 -2px 4px rgba(0,0,0,0.6)",
+    glow: "rgba(92,61,30,0.45)", cornerBg:"#8b6030", cornerBorder:"#3a2010", cornerShape:"2px", cornerSize:8,
+    imageBg: "radial-gradient(ellipse at 35% 25%, #1e1408, #0d0a05)",
+    plaqueBg: "repeating-linear-gradient(87deg, #2a1808 0px, #3a2210 2px, #1a1005 5px, #2a1808 8px)", plaqueBorder:"#8b6030",
+    plaqueText:"#c49030", chainColor:"#7a5020", nameColor:"#d4a050", nameShadow:"0 0 6px rgba(140,90,0,0.42)",
+  },
+  {
+    id: "silver",
+    frameBg: "linear-gradient(135deg, #5a6060 0%, #9aa8a8 18%, #687070 36%, #b0baba 54%, #606868 72%, #8a9898 100%)",
+    framePad: 11, outerBorder: "2px solid #404848",
+    innerLine: "1px solid rgba(180,200,200,0.22)", innerInset: 5,
+    shadow: "0 0 0 1px #404848, 0 0 0 2px rgba(150,170,170,0.22), 0 8px 20px rgba(60,80,80,0.4), 0 18px 42px rgba(0,0,0,0.78), inset 0 1px 0 rgba(200,220,220,0.28), inset 0 -1px 0 rgba(30,40,40,0.58)",
+    glow: "rgba(140,160,160,0.3)", cornerBg:"#b0c0c0", cornerBorder:"#4a5858", cornerShape:"50%", cornerSize:9,
+    imageBg: "radial-gradient(ellipse at 35% 25%, #141a1a, #090d0d)",
+    plaqueBg: "linear-gradient(180deg, #161e1e, #0d1414)", plaqueBorder:"#6a8080",
+    plaqueText:"#90a8a8", chainColor:"#7a9090", nameColor:"#b8d0d0", nameShadow:"0 0 6px rgba(140,180,180,0.4)",
+  },
+  {
+    id: "bronze",
+    frameBg: "linear-gradient(135deg, #6a3a18 0%, #8b5228 18%, #3a5030 36%, #7a4820 54%, #4a5832 72%, #6a3c1a 100%)",
+    framePad: 12, outerBorder: "2px solid #252015",
+    innerLine: "1px solid rgba(140,100,48,0.38)", innerInset: 5,
+    shadow: "0 0 0 1px #252015, 0 0 0 2px rgba(106,60,24,0.38), 0 8px 20px rgba(70,50,15,0.5), 0 18px 42px rgba(0,0,0,0.82), inset 0 1px 0 rgba(160,120,60,0.22), inset 0 -1px 0 rgba(20,15,5,0.68)",
+    glow: "rgba(100,70,25,0.45)", cornerBg:"#8b7040", cornerBorder:"#3a2810", cornerShape:"2px", cornerSize:8,
+    imageBg: "radial-gradient(ellipse at 35% 25%, #181408, #0d0a04)",
+    plaqueBg: "linear-gradient(180deg, #181608, #0d0c05)", plaqueBorder:"#7a6030",
+    plaqueText:"#a08040", chainColor:"#7a5030", nameColor:"#c09848", nameShadow:"0 0 6px rgba(150,110,35,0.45)",
+  },
+  {
+    id: "gilded",
+    frameBg: "linear-gradient(135deg, #a06808 0%, #dca018 12%, #b07810 24%, #f8d040 36%, #c09010 48%, #e8b020 60%, #b07808 72%, #d8a818 84%, #a06808 100%)",
+    framePad: 14, outerBorder: "2px solid #705008",
+    innerLine: "1px solid rgba(255,215,0,0.38)", innerInset: 7,
+    shadow: "0 0 0 1px #705008, 0 0 0 3px rgba(218,165,32,0.32), 0 0 0 5px rgba(120,85,0,0.14), 0 10px 28px rgba(218,165,32,0.55), 0 20px 55px rgba(0,0,0,0.78), inset 0 1px 0 rgba(255,230,80,0.48), inset 0 -1px 0 rgba(90,60,0,0.58)",
+    glow: "rgba(218,165,32,0.52)", cornerBg:"#ffe066", cornerBorder:"#806000", cornerShape:"50%", cornerSize:11,
+    imageBg: "radial-gradient(ellipse at 35% 25%, #201a08, #0d0b04)",
+    plaqueBg: "linear-gradient(180deg, #302005, #1e1508)", plaqueBorder:"#daa520",
+    plaqueText:"#ffd700", chainColor:"#daa520", nameColor:"#fff5a0", nameShadow:"0 0 11px rgba(255,215,0,0.65)",
+  },
+  {
+    id: "obsidian",
+    frameBg: "linear-gradient(135deg, #18101e 0%, #2a1535 18%, #120d18 36%, #2c1838 54%, #160e20 72%, #1e1228 100%)",
+    framePad: 11, outerBorder: "2px solid #080610",
+    innerLine: "1px solid rgba(130,80,180,0.32)", innerInset: 5,
+    shadow: "0 0 0 1px #080610, 0 0 0 2px rgba(120,60,160,0.28), 0 8px 24px rgba(80,40,110,0.45), 0 18px 46px rgba(0,0,0,0.88), inset 0 1px 0 rgba(160,100,220,0.18), inset 0 -1px 0 rgba(10,5,15,0.68)",
+    glow: "rgba(120,60,160,0.42)", cornerBg:"#9060c8", cornerBorder:"#381858", cornerShape:"50%", cornerSize:9,
+    imageBg: "radial-gradient(ellipse at 35% 25%, #120a16, #07050a)",
+    plaqueBg: "linear-gradient(180deg, #180a22, #0e0818)", plaqueBorder:"#6a40a8",
+    plaqueText:"#9060c0", chainColor:"#582e88", nameColor:"#c090e8", nameShadow:"0 0 9px rgba(160,80,220,0.58)",
+  },
 ];
 
-function TrophyRoom({ battles, players, trophyImages, setTrophyImages }) {
+function TrophyRoom({ battles, players, trophyImages, setTrophyImages, trophyMeta, setTrophyMeta }) {
   const [editingKey, setEditingKey] = useState(null);
   const [urlInput, setUrlInput] = useState("");
 
@@ -1036,91 +1099,105 @@ function TrophyRoom({ battles, players, trophyImages, setTrophyImages }) {
     );
   }
 
-  const commitUrl = (key) => {
-    setTrophyImages((prev) => ({ ...prev, [key]: urlInput.trim() }));
-    setEditingKey(null);
-  };
+  const commitUrl = (key) => { setTrophyImages((prev) => ({ ...prev, [key]: urlInput.trim() })); setEditingKey(null); };
+  const updateMeta = (key, field, val) => setTrophyMeta((prev) => ({ ...prev, [key]: { ...prev[key], [field]: val } }));
 
   return (
     <div>
-      <div style={{ textAlign:"center", marginBottom:24 }}>
-        <span style={{ fontSize:11, fontWeight:700, fontFamily:"'MedievalSharp', cursive", letterSpacing:2, color:"#8b7355", textTransform:"uppercase" }}>
-          ☠ Trophies of the Fallen ☠
-        </span>
+      <div style={{ textAlign:"center", marginBottom:28 }}>
+        <span style={{ fontSize:11, fontWeight:700, fontFamily:"'MedievalSharp', cursive", letterSpacing:2, color:"#8b7355", textTransform:"uppercase" }}>☠ Trophies of the Fallen ☠</span>
         <div style={{ margin:"8px auto 0", width:240, height:1, background:"linear-gradient(90deg, transparent, #5c4a32, transparent)" }} />
       </div>
-      {/* Masonry-style gallery wall */}
-      <div style={{ display:"flex", flexWrap:"wrap", gap:28, padding:"10px 0 30px", justifyContent:"center", alignItems:"flex-end" }}>
+      <div style={{ display:"flex", flexWrap:"wrap", gap:36, padding:"10px 4px 48px", justifyContent:"center", alignItems:"flex-end" }}>
         {trophies.map((t) => {
-          const r1 = seededRand(t.key, 1);
-          const r2 = seededRand(t.key, 2);
-          const r3 = seededRand(t.key, 3);
-          const r7 = seededRand(t.key, 7);
+          const r1 = seededRand(t.key, 1); // size
+          const r2 = seededRand(t.key, 2); // rotation
+          const r3 = seededRand(t.key, 3); // frame material
+          const r7 = seededRand(t.key, 7); // placeholder
 
-          // Frame size: ~33% small, ~40% medium, ~27% large
-          const sizeTier = r1 < 0.33 ? "sm" : r1 < 0.73 ? "md" : "lg";
-          const dims = { sm:{ w:148, imgH:110 }, md:{ w:192, imgH:148 }, lg:{ w:236, imgH:188 } }[sizeTier];
-          const nameSize = sizeTier === "sm" ? 9 : sizeTier === "md" ? 11 : 13;
+          // Portrait proportions ~2:3
+          const sizeTier = r1 < 0.35 ? "sm" : r1 < 0.72 ? "md" : "lg";
+          const dims = { sm:{imgW:136,imgH:194}, md:{imgW:170,imgH:242}, lg:{imgW:208,imgH:298} }[sizeTier];
+          const nameSize = { sm:10, md:12, lg:14 }[sizeTier];
 
-          // Rotation: -5 to +5 deg, with slight bias toward smaller angles
           const rotate = ((r2 * 10) - 5).toFixed(2);
-          const fv = FRAME_VARIANTS[Math.floor(r3 * 4)];
+          const fv = FRAME_VARIANTS[Math.floor(r3 * FRAME_VARIANTS.length)];
           const placeholder = TROPHY_PLACEHOLDERS[Math.floor(r7 * TROPHY_PLACEHOLDERS.length)];
           const playerColor = PLAYER_COLORS[players.indexOf(t.player) % PLAYER_COLORS.length];
           const imgUrl = trophyImages?.[t.key] || "";
           const isEditing = editingKey === t.key;
+          const meta = trophyMeta?.[t.key] || {};
+          const plaqueW = dims.imgW + 2 * fv.framePad - 12;
 
           return (
             <div key={t.key} style={{ transform:`rotate(${rotate}deg)`, transformOrigin:"center bottom", flexShrink:0, display:"flex", flexDirection:"column", alignItems:"center" }}>
-              {/* ── Portrait frame ── */}
-              <div style={{ width:dims.w, border:`7px solid ${fv.outer}`, outline:`3px solid ${fv.inner}`, outlineOffset:-1, borderRadius:3, boxShadow:`0 0 0 1px ${fv.outer}33, 0 0 24px ${fv.glow}, 0 6px 32px rgba(0,0,0,0.8), inset 0 0 12px rgba(0,0,0,0.6)`, background:"linear-gradient(160deg, #1e1810, #0d0b09)", position:"relative", overflow:"hidden" }}>
-                {/* Inner filigree line */}
-                <div style={{ position:"absolute", inset:5, border:`1px solid ${fv.outer}55`, borderRadius:1, pointerEvents:"none", zIndex:3 }} />
-                {/* Corner ornaments */}
-                {["0 0","0 auto","auto 0","auto auto"].map((pos, ci) => (
-                  <div key={ci} style={{ position:"absolute", top:pos.split(" ")[0] === "0" ? 4 : "auto", bottom:pos.split(" ")[0] === "auto" ? 4 : "auto", left:pos.split(" ")[1] === "0" ? 4 : "auto", right:pos.split(" ")[1] === "auto" ? 4 : "auto", width:10, height:10, border:`1px solid ${fv.outer}`, borderRadius:"50%", background:`radial-gradient(circle, ${fv.outer}88, transparent)`, zIndex:4, pointerEvents:"none" }} />
+
+              {/* ── Ornate portrait frame ── */}
+              <div style={{ background:fv.frameBg, padding:fv.framePad, border:fv.outerBorder, borderRadius:4, boxShadow:fv.shadow, position:"relative" }}>
+                {/* Inner filigree border */}
+                <div style={{ position:"absolute", inset:fv.innerInset, border:fv.innerLine, borderRadius:2, pointerEvents:"none", zIndex:3 }} />
+                {/* Corner ornaments on the frame material */}
+                {[{top:3,left:3},{top:3,right:3},{bottom:3,left:3},{bottom:3,right:3}].map((pos, ci) => (
+                  <div key={ci} style={{ position:"absolute", ...pos, width:fv.cornerSize, height:fv.cornerSize, background:`radial-gradient(circle, ${fv.cornerBg}, ${fv.cornerBg}77)`, border:`1px solid ${fv.cornerBorder}`, borderRadius:fv.cornerShape, zIndex:4, pointerEvents:"none", boxShadow:`0 0 5px ${fv.cornerBg}66` }} />
                 ))}
 
-                {/* Image / placeholder area */}
-                <div style={{ height:dims.imgH, position:"relative", overflow:"hidden" }}>
+                {/* Portrait canvas */}
+                <div style={{ width:dims.imgW, height:dims.imgH, position:"relative", overflow:"hidden", background:fv.imageBg }}>
                   {imgUrl ? (
                     <img src={imgUrl} alt={t.name} style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} onError={(e) => { e.target.style.display="none"; }} />
                   ) : (
-                    <div style={{ height:"100%", display:"flex", alignItems:"center", justifyContent:"center", padding:14, background:"radial-gradient(ellipse at center, #110d07, #0a0805)" }}>
-                      <p style={{ color:`${fv.outer}55`, fontFamily:"'Spectral', serif", fontStyle:"italic", fontSize:9, textAlign:"center", lineHeight:1.6, margin:0 }}>{placeholder}</p>
+                    <div style={{ height:"100%", display:"flex", alignItems:"center", justifyContent:"center", padding:18 }}>
+                      <p style={{ color:fv.plaqueText, fontSize:11, fontFamily:"'Spectral', serif", fontStyle:"italic", textAlign:"center", lineHeight:1.75, margin:0, textShadow:`0 0 10px ${fv.glow}`, opacity:0.92 }}>{placeholder}</p>
                     </div>
                   )}
-                  {/* Add/change art button */}
+                  {/* Add / change portrait art */}
                   <button onClick={() => { setEditingKey(isEditing ? null : t.key); setUrlInput(imgUrl); }}
-                    style={{ position:"absolute", bottom:5, right:5, background:"rgba(10,8,5,0.88)", border:`1px solid ${fv.outer}88`, borderRadius:3, color:fv.outer, padding:"2px 7px", fontSize:8, cursor:"pointer", fontFamily:"'MedievalSharp', cursive", letterSpacing:0.5, zIndex:5, opacity:0.85, transition:"opacity .15s" }}
-                    onMouseEnter={(e) => e.currentTarget.style.opacity="1"} onMouseLeave={(e) => e.currentTarget.style.opacity="0.85"}>
+                    style={{ position:"absolute", bottom:6, right:6, background:"rgba(8,6,3,0.92)", border:`1px solid ${fv.plaqueBorder}88`, borderRadius:3, color:fv.plaqueText, padding:"3px 8px", fontSize:8, cursor:"pointer", fontFamily:"'MedievalSharp', cursive", letterSpacing:0.5, zIndex:5, opacity:0.82, transition:"opacity .15s" }}
+                    onMouseEnter={(e) => e.currentTarget.style.opacity="1"} onMouseLeave={(e) => e.currentTarget.style.opacity="0.82"}>
                     {imgUrl ? "✦ art" : "+ art"}
                   </button>
                 </div>
 
                 {/* URL input panel */}
                 {isEditing && (
-                  <div style={{ padding:"7px 8px", background:"#0a0805", borderTop:`1px solid ${fv.inner}` }}>
+                  <div style={{ padding:"8px", background:"#0a0805", borderTop:`1px solid ${fv.plaqueBorder}55` }}>
                     <input autoFocus value={urlInput} onChange={(e) => setUrlInput(e.target.value)}
                       onKeyDown={(e) => { if (e.key === "Enter") commitUrl(t.key); if (e.key === "Escape") setEditingKey(null); }}
                       placeholder="Paste image URL…"
-                      style={{ width:"100%", background:"#0d0b09", border:`1px solid ${fv.outer}88`, borderRadius:3, color:"#c4a97d", padding:"4px 6px", fontSize:9, fontFamily:"'Spectral', serif", boxSizing:"border-box" }} />
+                      style={{ width:"100%", background:"#0d0b09", border:`1px solid ${fv.plaqueBorder}88`, borderRadius:3, color:"#c4a97d", padding:"4px 6px", fontSize:9, fontFamily:"'Spectral', serif", boxSizing:"border-box" }} />
                     <div style={{ display:"flex", gap:4, marginTop:5 }}>
-                      <button onClick={() => commitUrl(t.key)} style={{ flex:1, background:"#1a1510", border:`1px solid ${fv.outer}`, borderRadius:3, color:fv.outer, padding:"3px 0", fontSize:9, cursor:"pointer", fontFamily:"'MedievalSharp', cursive" }}>✓ Hang it</button>
+                      <button onClick={() => commitUrl(t.key)} style={{ flex:1, background:"#1a1510", border:`1px solid ${fv.plaqueBorder}`, borderRadius:3, color:fv.plaqueText, padding:"3px 0", fontSize:9, cursor:"pointer", fontFamily:"'MedievalSharp', cursive" }}>✓ Hang it</button>
                       <button onClick={() => setEditingKey(null)} style={{ background:"#1a1510", border:"1px solid #3a3020", borderRadius:3, color:"#5c4a32", padding:"3px 8px", fontSize:9, cursor:"pointer", fontFamily:"'MedievalSharp', cursive" }}>✕</button>
                     </div>
                   </div>
                 )}
               </div>
 
-              {/* ── Plaque ── */}
-              <div style={{ width:dims.w - 16, background:"linear-gradient(180deg, #2a1e0a 0%, #1a1208 100%)", border:`1px solid ${fv.outer}99`, borderTop:"none", padding:"7px 10px 9px", textAlign:"center", borderRadius:"0 0 4px 4px", boxShadow:`0 5px 14px rgba(0,0,0,0.6), inset 0 1px 0 ${fv.outer}22` }}>
-                <div style={{ fontSize:nameSize, fontWeight:700, color:"#daa520", fontFamily:"'MedievalSharp', cursive", letterSpacing:0.5, marginBottom:4, wordBreak:"break-word" }}>{t.name}</div>
-                <div style={{ fontSize:8, color:"#8b7355", fontFamily:"'Spectral', serif", lineHeight:1.6 }}>
-                  Slain by <span style={{ color:playerColor, fontWeight:700 }}>{t.player}</span><br />
-                  <span style={{ color:"#5c4a32", fontStyle:"italic" }}>{t.encounter}</span>
-                  <span style={{ color:"#3a2800" }}> · </span>
-                  <span style={{ color:"#5c4a32" }}>Round {t.round}</span>
+              {/* ── Chain / hook connector ── */}
+              <div style={{ display:"flex", flexDirection:"column", alignItems:"center" }}>
+                <div style={{ width:14, height:6, border:`1.5px solid ${fv.chainColor}`, borderBottom:"none", borderRadius:"5px 5px 0 0", opacity:0.72 }} />
+                <div style={{ width:2, height:8, background:fv.chainColor, opacity:0.5, borderRadius:1 }} />
+                <div style={{ width:8, height:4, border:`1.5px solid ${fv.chainColor}`, borderRadius:3, opacity:0.6 }} />
+                <div style={{ width:2, height:5, background:fv.chainColor, opacity:0.45, borderRadius:1 }} />
+              </div>
+
+              {/* ── Material-matched plaque ── */}
+              <div style={{ width:plaqueW, background:fv.plaqueBg, border:`1px solid ${fv.plaqueBorder}`, borderRadius:4, padding:"9px 12px 11px", textAlign:"center", boxShadow:`0 5px 18px rgba(0,0,0,0.68), inset 0 1px 0 ${fv.plaqueBorder}22, inset 0 -1px 0 rgba(0,0,0,0.42)` }}>
+                <div style={{ fontSize:nameSize, fontWeight:700, color:fv.nameColor, fontFamily:"'MedievalSharp', cursive", letterSpacing:0.5, marginBottom:5, wordBreak:"break-word", textShadow:fv.nameShadow }}>{t.name}</div>
+                <div style={{ fontSize:9, color:fv.plaqueText, fontFamily:"'Spectral', serif", lineHeight:1.7, opacity:0.88 }}>
+                  Slain by{" "}<span style={{ color:playerColor, fontWeight:700, opacity:1 }}>{t.player}</span><br />
+                  <span style={{ fontStyle:"italic", opacity:0.8 }}>{t.encounter}</span>
+                  <span style={{ opacity:0.45 }}> · </span>Round {t.round}
+                </div>
+                {/* CR & HP editable fields */}
+                <div style={{ display:"flex", justifyContent:"center", alignItems:"center", gap:7, marginTop:7, paddingTop:6, borderTop:`1px solid ${fv.plaqueBorder}33` }}>
+                  <span style={{ fontSize:7, color:fv.plaqueText, fontFamily:"'MedievalSharp', cursive", letterSpacing:0.5, opacity:0.75 }}>CR</span>
+                  <input value={meta.cr || ""} onChange={(e) => updateMeta(t.key, "cr", e.target.value)} placeholder="—" title="Challenge Rating"
+                    style={{ width:30, background:"transparent", border:"none", borderBottom:`1px solid ${fv.plaqueBorder}55`, color:fv.plaqueText, textAlign:"center", fontSize:10, fontFamily:"'Spectral', serif", padding:"0 2px", outline:"none", cursor:"text" }} />
+                  <span style={{ color:fv.plaqueBorder, fontSize:9, opacity:0.45 }}>·</span>
+                  <input value={meta.hp || ""} onChange={(e) => updateMeta(t.key, "hp", e.target.value)} placeholder="—" title="Hit Points"
+                    style={{ width:40, background:"transparent", border:"none", borderBottom:`1px solid ${fv.plaqueBorder}55`, color:fv.plaqueText, textAlign:"center", fontSize:10, fontFamily:"'Spectral', serif", padding:"0 2px", outline:"none", cursor:"text" }} />
+                  <span style={{ fontSize:7, color:fv.plaqueText, fontFamily:"'MedievalSharp', cursive", letterSpacing:0.5, opacity:0.75 }}>HP</span>
                 </div>
               </div>
             </div>
@@ -1202,6 +1279,7 @@ export default function App() {
   const [syncStatus, setSyncStatus] = useState("idle"); // "saving" | "saved" | "error"
   const [playerDefaults, setPlayerDefaults] = useState({}); // { [player]: default DMG type }
   const [trophyImages, setTrophyImages] = useState({});    // { [trophyKey]: imageUrl }
+  const [trophyMeta, setTrophyMeta] = useState({});       // { [trophyKey]: { cr, hp } }
 
   // Wire the module-level save callback to this component's state setter.
   const setSyncRef = useRef(setSyncStatus);
@@ -1209,10 +1287,10 @@ export default function App() {
   useEffect(() => { _onSyncChange = (s) => setSyncRef.current(s); return () => { _onSyncChange = null; }; }, []);
 
   // Load state on mount.
-  useEffect(() => { loadState().then((s) => { if (s) { setPlayers(s.players || DEFAULT_PLAYERS); setBattles(s.battles || []); setActiveBattleIdx(s.activeBattleIdx || 0); setPlayerDefaults(s.playerDefaults || {}); setTrophyImages(s.trophyImages || {}); } setLoaded(true); }); }, []);
+  useEffect(() => { loadState().then((s) => { if (s) { setPlayers(s.players || DEFAULT_PLAYERS); setBattles(s.battles || []); setActiveBattleIdx(s.activeBattleIdx || 0); setPlayerDefaults(s.playerDefaults || {}); setTrophyImages(s.trophyImages || {}); setTrophyMeta(s.trophyMeta || {}); } setLoaded(true); }); }, []);
 
   // Save whenever state changes (debounced in saveState for Supabase).
-  useEffect(() => { if (loaded) saveState({ players, battles, activeBattleIdx, playerDefaults, trophyImages }); }, [players, battles, activeBattleIdx, playerDefaults, trophyImages, loaded]);
+  useEffect(() => { if (loaded) saveState({ players, battles, activeBattleIdx, playerDefaults, trophyImages, trophyMeta }); }, [players, battles, activeBattleIdx, playerDefaults, trophyImages, trophyMeta, loaded]);
 
   // Subscribe to realtime changes from other users.
   useEffect(() => {
@@ -1228,6 +1306,7 @@ export default function App() {
         setActiveBattleIdx(s.activeBattleIdx ?? 0);
         setPlayerDefaults(s.playerDefaults || {});
         setTrophyImages(s.trophyImages || {});
+        setTrophyMeta(s.trophyMeta || {});
       })
       .subscribe();
     return () => supabase.removeChannel(channel);
@@ -1281,7 +1360,7 @@ export default function App() {
     }));
   };
 
-  const handleReset = () => { if (confirm("Obliterate all data? No resurrection!")) { setPlayers(DEFAULT_PLAYERS); setBattles([]); setActiveBattleIdx(0); setPlayerDefaults({}); setTrophyImages({}); setTab("entry"); } };
+  const handleReset = () => { if (confirm("Obliterate all data? No resurrection!")) { setPlayers(DEFAULT_PLAYERS); setBattles([]); setActiveBattleIdx(0); setPlayerDefaults({}); setTrophyImages({}); setTrophyMeta({}); setTab("entry"); } };
 
   const handleExport = () => {
     const escape = (v) => `"${String(v).replace(/"/g, '""')}"`;
@@ -1479,7 +1558,7 @@ export default function App() {
               setFilterPlayer={setFilterPlayer} setFilterBattle={setFilterBattle} setFilterRound={setFilterRound} />
       )}
 
-      {tab === "trophy" && <TrophyRoom battles={battles} players={players} trophyImages={trophyImages} setTrophyImages={setTrophyImages} />}
+      {tab === "trophy" && <TrophyRoom battles={battles} players={players} trophyImages={trophyImages} setTrophyImages={setTrophyImages} trophyMeta={trophyMeta} setTrophyMeta={setTrophyMeta} />}
 
       {tab === "settings" && <Settings players={players} setPlayers={handleSetPlayers} onReset={handleReset} onExport={handleExport} onImport={handleImport} playerDefaults={playerDefaults} setPlayerDefaults={setPlayerDefaults} />}
 
