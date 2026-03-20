@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { supabase } from "./supabase.js";
+import { ALL_FRAMES, FRAME_MATERIALS } from "./TrophyFrames";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   LineChart, Line, PieChart, Pie, Cell, Legend, CartesianGrid,
@@ -999,8 +1000,20 @@ function seededRand(key, offset) {
   return ((h >>> 0) % 10000) / 10000;
 }
 
-// 5 real-world frame materials (wood, metal). Each drives all frame + plaque styling.
-const FRAME_VARIANTS = [
+// Content insets (in natural SVG px) from each SVG frame's edges to its transparent opening.
+const FRAME_CONFIGS = [
+  { naturalW:280, naturalH:360, top:16, left:16, right:16, bottom:16, clip:"4px"     }, // Frame1 rect
+  { naturalW:260, naturalH:340, top:20, left:17, right:17, bottom:20, clip:"50%"     }, // Frame2 oval
+  { naturalW:260, naturalH:370, top:26, left:34, right:34, bottom:6,  clip:"arch"    }, // Frame3 arch
+  { naturalW:260, naturalH:360, top:52, left:34, right:34, bottom:26, clip:"shield"  }, // Frame4 shield
+  { naturalW:300, naturalH:340, top:32, left:22, right:22, bottom:52, clip:"50%"     }, // Frame5 circle
+  { naturalW:280, naturalH:360, top:22, left:22, right:22, bottom:22, clip:"2px"     }, // Frame6 timber
+];
+const SCALE_TIERS = { sm:0.65, md:0.80, lg:1.0 };
+const MATERIAL_KEYS = Object.keys(FRAME_MATERIALS); // ["gold","bronze","silver","iron","wood"]
+
+// (legacy CSS-only frame variants removed — replaced by SVG frames from TrophyFrames.jsx)
+const FRAME_VARIANTS_UNUSED = [
   {
     id: "heraldic",
     // Aged gold (Or) — coat-of-arms multi-ring border, gesso cross-hatch, tarnished altarpiece gold
@@ -1182,63 +1195,6 @@ const FRAME_VARIANTS = [
   },
 ];
 
-// Medieval frame shapes — inspired by heraldic coat-of-arms and Gothic architectural forms
-const SHAPE_KEYS = ["rect", "lancet", "arch", "round", "shield"];
-const SHAPE_DEFS = {
-  // Rectangular reliquary panel — classic portrait, ornate molded border
-  rect: (imgW, imgH) => ({
-    id:"rect", imgW, imgH,
-    frameRadius:"3px", canvasRadius:"0",
-    filigreeRadius:"2px", filigreeRadius2:"2px",
-    corners:[true,true,true,true],
-  }),
-  // Lancet arch — tall narrow Gothic window, the defining shape of medieval church architecture
-  lancet: (imgW, imgH, _fp, _ii, _ii2) => {
-    const w = Math.round(imgW * 0.72);
-    const h = Math.round(imgH * 1.08);
-    const r = Math.round(w / 2);
-    return {
-      id:"lancet", imgW:w, imgH:h,
-      frameRadius:`${r}px ${r}px 3px 3px`,
-      canvasRadius:`${r-2}px ${r-2}px 0 0`,
-      filigreeRadius:`${r-5}px ${r-5}px 1px 1px`,
-      filigreeRadius2:`${r-9}px ${r-9}px 1px 1px`,
-      corners:[false,false,true,true],
-    };
-  },
-  // Romanesque round arch — semicircular top, broader and heavier than lancet
-  arch: (imgW, imgH, fp, ii, ii2) => {
-    const tw = imgW + 2*fp;
-    return {
-      id:"arch", imgW, imgH,
-      frameRadius:`${tw/2}px ${tw/2}px 4px 4px`,
-      canvasRadius:`${imgW/2}px ${imgW/2}px 0 0`,
-      filigreeRadius:`${(tw-2*ii)/2}px ${(tw-2*ii)/2}px 2px 2px`,
-      filigreeRadius2:`${(tw-2*(ii2||ii+5))/2}px ${(tw-2*(ii2||ii+5))/2}px 2px 2px`,
-      corners:[false,false,true,true],
-    };
-  },
-  // Heraldic roundel — circular medallion, used for seals and badges
-  round: (imgW, imgH) => {
-    const s = Math.min(imgW, imgH);
-    return {
-      id:"round", imgW:s, imgH:s,
-      frameRadius:"50%", canvasRadius:"50%",
-      filigreeRadius:"50%", filigreeRadius2:"50%",
-      corners:[false,false,false,false],
-    };
-  },
-  // Heraldic escutcheon — classic heater shield, the central form of heraldry
-  shield: (imgW, imgH) => ({
-    id:"shield", imgW, imgH:Math.round(imgH*0.88),
-    frameRadius:"6px 6px 48% 48% / 6px 6px 58% 58%",
-    canvasRadius:"2px 2px 46% 46% / 2px 2px 56% 56%",
-    filigreeRadius:"4px 4px 48% 48% / 4px 4px 58% 58%",
-    filigreeRadius2:"5px 5px 46% 46% / 5px 5px 56% 56%",
-    corners:[true,true,false,false],
-  }),
-};
-
 function TrophyRoom({ battles, players, trophyImages, setTrophyImages, trophyMeta, setTrophyMeta }) {
   const [editingKey, setEditingKey] = useState(null);
   const [urlInput, setUrlInput] = useState("");
@@ -1278,87 +1234,90 @@ function TrophyRoom({ battles, players, trophyImages, setTrophyImages, trophyMet
         <span style={{ fontSize:11, fontWeight:700, fontFamily:"'MedievalSharp', cursive", letterSpacing:2, color:"#8b7355", textTransform:"uppercase" }}>☠ Trophies of the Fallen ☠</span>
         <div style={{ margin:"8px auto 0", width:240, height:1, background:"linear-gradient(90deg, transparent, #5c4a32, transparent)" }} />
       </div>
-      {/* Gallery wall — dark stone texture via layered radial + repeating-linear gradients */}
+      {/* Gallery wall */}
       <div style={{ display:"flex", flexWrap:"wrap", gap:44, padding:"36px 24px 56px", justifyContent:"center", alignItems:"flex-end", background:["radial-gradient(ellipse 80% 60% at 22% 38%, rgba(45,35,20,0.55), transparent)","radial-gradient(ellipse 65% 75% at 78% 65%, rgba(38,28,16,0.45), transparent)","repeating-linear-gradient(0deg, transparent, transparent 46px, rgba(0,0,0,0.022) 46px, rgba(0,0,0,0.022) 47px)","repeating-linear-gradient(90deg, transparent, transparent 68px, rgba(0,0,0,0.016) 68px, rgba(0,0,0,0.016) 69px)","linear-gradient(180deg, #1c1710 0%, #141008 100%)"].join(","), borderRadius:8, border:"1px solid #2a2018", boxShadow:"inset 0 0 100px rgba(0,0,0,0.35), inset 0 0 30px rgba(0,0,0,0.20)", marginTop:8 }}>
         {trophies.map((t) => {
           const r1 = seededRand(t.key, 1); // size
           const r2 = seededRand(t.key, 2); // rotation
-          const r3 = seededRand(t.key, 3); // frame material
-          const r4 = seededRand(t.key, 4); // shape
+          const r3 = seededRand(t.key, 3); // frame shape
+          const r4 = seededRand(t.key, 4); // material
           const r7 = seededRand(t.key, 7); // placeholder
 
-          // Portrait proportions ~2:3
           const sizeTier = r1 < 0.35 ? "sm" : r1 < 0.72 ? "md" : "lg";
-          const baseDims = { sm:{imgW:136,imgH:194}, md:{imgW:170,imgH:242}, lg:{imgW:208,imgH:298} }[sizeTier];
           const nameSize = { sm:10, md:12, lg:14 }[sizeTier];
-
           const rotate = ((r2 * 6) - 3).toFixed(2);
-          const fv = FRAME_VARIANTS[Math.floor(r3 * FRAME_VARIANTS.length)];
-          const shapeKey = SHAPE_KEYS[Math.floor(r4 * SHAPE_KEYS.length)];
-          const shapeFactory = SHAPE_DEFS[shapeKey];
-          const sh = (shapeKey === "arch" || shapeKey === "lancet")
-            ? shapeFactory(baseDims.imgW, baseDims.imgH, fv.framePad, fv.innerInset, fv.innerInset2)
-            : shapeFactory(baseDims.imgW, baseDims.imgH);
-          const dims = { imgW: sh.imgW, imgH: sh.imgH };
+
+          const frameIdx = Math.floor(r3 * ALL_FRAMES.length);
+          const matKey = MATERIAL_KEYS[Math.floor(r4 * MATERIAL_KEYS.length)];
+          const FrameComp = ALL_FRAMES[frameIdx];
+          const mat = FRAME_MATERIALS[matKey];
+          const cfg = FRAME_CONFIGS[frameIdx];
+
+          const scale = SCALE_TIERS[sizeTier];
+          const svgW = Math.round(cfg.naturalW * scale);
+          const svgH = Math.round(cfg.naturalH * scale);
+          const cTop    = Math.round(cfg.top    * scale);
+          const cLeft   = Math.round(cfg.left   * scale);
+          const cRight  = Math.round(cfg.right  * scale);
+          const cBottom = Math.round(cfg.bottom * scale);
+          const cW = svgW - cLeft - cRight;
+          const cH = svgH - cTop  - cBottom;
+
+          // Compute border-radius for content clip matching each frame's opening
+          let clipShape = cfg.clip;
+          if (cfg.clip === "arch")   clipShape = `${cW/2}px ${cW/2}px 0 0`;
+          if (cfg.clip === "shield") clipShape = "4px 4px 48% 48% / 4px 4px 58% 58%";
 
           const placeholder = TROPHY_PLACEHOLDERS[Math.floor(r7 * TROPHY_PLACEHOLDERS.length)];
           const playerColor = PLAYER_COLORS[players.indexOf(t.player) % PLAYER_COLORS.length];
           const imgUrl = trophyImages?.[t.key] || "";
           const isEditing = editingKey === t.key;
           const meta = trophyMeta?.[t.key] || {};
-          const plaqueW = sh.imgW + 2 * fv.framePad - 12;
+          const plaqueW = svgW - 12;
 
-          // Art button position varies by shape so it stays visible and unclipped
-          const artBtnPos = sh.id === "round"
-            ? { bottom:14, left:"50%", transform:"translateX(-50%)" }
-            : sh.id === "shield"
-              ? { bottom:10, right:"18%" }
-              : sh.id === "lancet"
-                ? { bottom:8, left:"50%", transform:"translateX(-50%)" }
-                : { bottom:6, right:6 };
+          // Art button — positioned to stay inside the visible clip area
+          const artBtnPos = cfg.clip === "shield"
+            ? { bottom:20, left:"50%", transform:"translateX(-50%)" }
+            : (cfg.clip === "arch" || cfg.clip === "50%")
+              ? { bottom:8, left:"50%", transform:"translateX(-50%)" }
+              : { bottom:6, right:6 };
 
           return (
             <div key={t.key} style={{ transform:`rotate(${rotate}deg)`, transformOrigin:"center bottom", flexShrink:0, display:"flex", flexDirection:"column", alignItems:"center" }}>
 
-              {/* ── Ornate portrait frame ── */}
-              <div style={{ background:fv.frameBg, padding:fv.framePad, border:fv.outerBorder, borderRadius:sh.frameRadius, boxShadow:fv.shadow, position:"relative" }}>
-                {/* Inner filigree borders — two rings create multi-layer heraldic border effect */}
-                <div style={{ position:"absolute", inset:fv.innerInset, border:fv.innerLine, borderRadius:sh.filigreeRadius, pointerEvents:"none", zIndex:3 }} />
-                {fv.innerLine2 && <div style={{ position:"absolute", inset:fv.innerInset2, border:fv.innerLine2, borderRadius:sh.filigreeRadius2, pointerEvents:"none", zIndex:3 }} />}
-                {/* Corner ornaments — only shown on corners supported by this shape */}
-                {[{top:0,left:2},{top:0,right:2},{bottom:0,left:2},{bottom:0,right:2}].map((pos, ci) =>
-                  sh.corners[ci] ? (
-                    <div key={ci} style={{ position:"absolute", ...pos, zIndex:4, pointerEvents:"none", fontSize:fv.cornerFontSize, color:fv.cornerColor, textShadow:fv.cornerShadow, lineHeight:1, userSelect:"none", fontFamily:"serif", transform:`rotate(${(fv.cornerRotations||[0,0,0,0])[ci]}deg)` }}>{fv.cornerChar}</div>
-                  ) : null
-                )}
-
-                {/* Portrait canvas */}
-                <div style={{ width:dims.imgW, height:dims.imgH, position:"relative", overflow:"hidden", background:fv.imageBg, borderRadius:sh.canvasRadius }}>
+              {/* ── SVG frame with content layered inside ── */}
+              <div style={{ position:"relative", width:svgW, height:svgH }}>
+                {/* Content area — clipped to frame opening shape */}
+                <div style={{ position:"absolute", top:cTop, left:cLeft, width:cW, height:cH, overflow:"hidden", borderRadius:clipShape, background:"#0c0a06", zIndex:1 }}>
                   {imgUrl ? (
                     <img src={imgUrl} alt={t.name} style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} onError={(e) => { e.target.style.display="none"; }} />
                   ) : (
-                    <div style={{ height:"100%", display:"flex", alignItems:"center", justifyContent:"center", padding:18 }}>
-                      <p style={{ color:fv.plaqueText, fontSize:11, fontFamily:"'Spectral', serif", fontStyle:"italic", textAlign:"center", lineHeight:1.75, margin:0, textShadow:`0 0 10px ${fv.glow}`, opacity:0.92 }}>{placeholder}</p>
+                    <div style={{ height:"100%", display:"flex", alignItems:"center", justifyContent:"center", padding:12 }}>
+                      <p style={{ color:mat.accent, fontSize:10, fontFamily:"'Spectral', serif", fontStyle:"italic", textAlign:"center", lineHeight:1.75, margin:0, opacity:0.7 }}>{placeholder}</p>
                     </div>
                   )}
                   {/* Add / change portrait art */}
                   <button onClick={() => { setEditingKey(isEditing ? null : t.key); setUrlInput(imgUrl); }}
-                    style={{ position:"absolute", ...artBtnPos, background:"rgba(8,6,3,0.92)", border:`1px solid ${fv.plaqueBorder}88`, borderRadius:3, color:fv.plaqueText, padding:"3px 8px", fontSize:8, cursor:"pointer", fontFamily:"'MedievalSharp', cursive", letterSpacing:0.5, zIndex:5, opacity:0.82, transition:"opacity .15s", whiteSpace:"nowrap" }}
+                    style={{ position:"absolute", ...artBtnPos, background:"rgba(8,6,3,0.92)", border:`1px solid ${mat.color}88`, borderRadius:3, color:mat.accent, padding:"3px 8px", fontSize:8, cursor:"pointer", fontFamily:"'MedievalSharp', cursive", letterSpacing:0.5, zIndex:5, opacity:0.82, transition:"opacity .15s", whiteSpace:"nowrap" }}
                     onMouseEnter={(e) => e.currentTarget.style.opacity="1"} onMouseLeave={(e) => e.currentTarget.style.opacity="0.82"}>
                     {imgUrl ? "✦ art" : "+ art"}
                   </button>
                 </div>
+                {/* SVG frame overlay — transparent center, pointer-events:none */}
+                <div style={{ position:"absolute", top:0, left:0, zIndex:2, pointerEvents:"none" }}>
+                  <FrameComp width={svgW} height={svgH} color={mat.color} accent={mat.accent} />
+                </div>
               </div>
 
-              {/* URL input panel — outside frame so it never gets clipped by shape */}
+              {/* URL input panel — outside frame */}
               {isEditing && (
-                <div style={{ width:plaqueW, padding:"8px", background:"#0a0805", border:`1px solid ${fv.plaqueBorder}55`, borderRadius:"0 0 4px 4px", marginTop:2 }}>
+                <div style={{ width:plaqueW, padding:"8px", background:"#0a0805", border:`1px solid ${mat.color}55`, borderRadius:"0 0 4px 4px", marginTop:2 }}>
                   <input autoFocus value={urlInput} onChange={(e) => setUrlInput(e.target.value)}
                     onKeyDown={(e) => { if (e.key === "Enter") commitUrl(t.key); if (e.key === "Escape") setEditingKey(null); }}
                     placeholder="Paste image URL…"
-                    style={{ width:"100%", background:"#0d0b09", border:`1px solid ${fv.plaqueBorder}88`, borderRadius:3, color:"#c4a97d", padding:"4px 6px", fontSize:9, fontFamily:"'Spectral', serif", boxSizing:"border-box" }} />
+                    style={{ width:"100%", background:"#0d0b09", border:`1px solid ${mat.color}88`, borderRadius:3, color:"#c4a97d", padding:"4px 6px", fontSize:9, fontFamily:"'Spectral', serif", boxSizing:"border-box" }} />
                   <div style={{ display:"flex", gap:4, marginTop:5 }}>
-                    <button onClick={() => commitUrl(t.key)} style={{ flex:1, background:"#1a1510", border:`1px solid ${fv.plaqueBorder}`, borderRadius:3, color:fv.plaqueText, padding:"3px 0", fontSize:9, cursor:"pointer", fontFamily:"'MedievalSharp', cursive" }}>✓ Hang it</button>
+                    <button onClick={() => commitUrl(t.key)} style={{ flex:1, background:"#1a1510", border:`1px solid ${mat.color}`, borderRadius:3, color:mat.accent, padding:"3px 0", fontSize:9, cursor:"pointer", fontFamily:"'MedievalSharp', cursive" }}>✓ Hang it</button>
                     <button onClick={() => setEditingKey(null)} style={{ background:"#1a1510", border:"1px solid #3a3020", borderRadius:3, color:"#5c4a32", padding:"3px 8px", fontSize:9, cursor:"pointer", fontFamily:"'MedievalSharp', cursive" }}>✕</button>
                   </div>
                 </div>
@@ -1366,29 +1325,29 @@ function TrophyRoom({ battles, players, trophyImages, setTrophyImages, trophyMet
 
               {/* ── Chain / hook connector ── */}
               <div style={{ display:"flex", flexDirection:"column", alignItems:"center" }}>
-                <div style={{ width:14, height:6, border:`1.5px solid ${fv.chainColor}`, borderBottom:"none", borderRadius:"5px 5px 0 0", opacity:0.72 }} />
-                <div style={{ width:2, height:8, background:fv.chainColor, opacity:0.5, borderRadius:1 }} />
-                <div style={{ width:8, height:4, border:`1.5px solid ${fv.chainColor}`, borderRadius:3, opacity:0.6 }} />
-                <div style={{ width:2, height:5, background:fv.chainColor, opacity:0.45, borderRadius:1 }} />
+                <div style={{ width:14, height:6, border:`1.5px solid ${mat.color}`, borderBottom:"none", borderRadius:"5px 5px 0 0", opacity:0.72 }} />
+                <div style={{ width:2, height:8, background:mat.color, opacity:0.5, borderRadius:1 }} />
+                <div style={{ width:8, height:4, border:`1.5px solid ${mat.color}`, borderRadius:3, opacity:0.6 }} />
+                <div style={{ width:2, height:5, background:mat.color, opacity:0.45, borderRadius:1 }} />
               </div>
 
               {/* ── Material-matched plaque ── */}
-              <div style={{ width:plaqueW, background:fv.plaqueBg, border:`1px solid ${fv.plaqueBorder}`, borderRadius:4, padding:"9px 12px 11px", textAlign:"center", boxShadow:fv.plaqueShadow }}>
-                <div style={{ fontSize:nameSize, fontWeight:700, color:fv.nameColor, fontFamily:"'MedievalSharp', cursive", letterSpacing:0.5, marginBottom:5, wordBreak:"break-word", textShadow:fv.nameShadow }}>{t.name}</div>
-                <div style={{ fontSize:9, color:fv.plaqueText, fontFamily:"'Spectral', serif", lineHeight:1.7, opacity:0.88 }}>
+              <div style={{ width:plaqueW, background:"linear-gradient(180deg, #1c1602 0%, #141000 50%, #100e00 100%)", border:`1px solid ${mat.color}`, borderRadius:4, padding:"9px 12px 11px", textAlign:"center", boxShadow:`0 4px 18px rgba(0,0,0,0.88), inset 0 1px 0 ${mat.accent}20, inset 0 -2px 5px rgba(0,0,0,0.74)` }}>
+                <div style={{ fontSize:nameSize, fontWeight:700, color:mat.accent, fontFamily:"'MedievalSharp', cursive", letterSpacing:0.5, marginBottom:5, wordBreak:"break-word", textShadow:`0 2px 0 rgba(0,0,0,0.92), 0 0 9px ${mat.color}60` }}>{t.name}</div>
+                <div style={{ fontSize:9, color:mat.accent, fontFamily:"'Spectral', serif", lineHeight:1.7, opacity:0.75 }}>
                   Slain by{" "}<span style={{ color:playerColor, fontWeight:700, opacity:1 }}>{t.player}</span><br />
                   <span style={{ fontStyle:"italic", opacity:0.8 }}>{t.encounter}</span>
                   <span style={{ opacity:0.45 }}> · </span>Round {t.round}
                 </div>
                 {/* CR & HP editable fields */}
-                <div style={{ display:"flex", justifyContent:"center", alignItems:"center", gap:7, marginTop:7, paddingTop:6, borderTop:`1px solid ${fv.plaqueBorder}33` }}>
-                  <span style={{ fontSize:7, color:fv.plaqueText, fontFamily:"'MedievalSharp', cursive", letterSpacing:0.5, opacity:0.75 }}>CR</span>
+                <div style={{ display:"flex", justifyContent:"center", alignItems:"center", gap:7, marginTop:7, paddingTop:6, borderTop:`1px solid ${mat.color}33` }}>
+                  <span style={{ fontSize:7, color:mat.accent, fontFamily:"'MedievalSharp', cursive", letterSpacing:0.5, opacity:0.75 }}>CR</span>
                   <input value={meta.cr || ""} onChange={(e) => updateMeta(t.key, "cr", e.target.value)} placeholder="—" title="Challenge Rating"
-                    style={{ width:30, background:"transparent", border:"none", borderBottom:`1px solid ${fv.plaqueBorder}55`, color:fv.plaqueText, textAlign:"center", fontSize:10, fontFamily:"'Spectral', serif", padding:"0 2px", outline:"none", cursor:"text" }} />
-                  <span style={{ color:fv.plaqueBorder, fontSize:9, opacity:0.45 }}>·</span>
+                    style={{ width:30, background:"transparent", border:"none", borderBottom:`1px solid ${mat.color}55`, color:mat.accent, textAlign:"center", fontSize:10, fontFamily:"'Spectral', serif", padding:"0 2px", outline:"none", cursor:"text" }} />
+                  <span style={{ color:mat.color, fontSize:9, opacity:0.45 }}>·</span>
                   <input value={meta.hp || ""} onChange={(e) => updateMeta(t.key, "hp", e.target.value)} placeholder="—" title="Hit Points"
-                    style={{ width:40, background:"transparent", border:"none", borderBottom:`1px solid ${fv.plaqueBorder}55`, color:fv.plaqueText, textAlign:"center", fontSize:10, fontFamily:"'Spectral', serif", padding:"0 2px", outline:"none", cursor:"text" }} />
-                  <span style={{ fontSize:7, color:fv.plaqueText, fontFamily:"'MedievalSharp', cursive", letterSpacing:0.5, opacity:0.75 }}>HP</span>
+                    style={{ width:40, background:"transparent", border:"none", borderBottom:`1px solid ${mat.color}55`, color:mat.accent, textAlign:"center", fontSize:10, fontFamily:"'Spectral', serif", padding:"0 2px", outline:"none", cursor:"text" }} />
+                  <span style={{ fontSize:7, color:mat.accent, fontFamily:"'MedievalSharp', cursive", letterSpacing:0.5, opacity:0.75 }}>HP</span>
                 </div>
               </div>
             </div>
