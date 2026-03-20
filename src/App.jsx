@@ -1002,234 +1002,239 @@ function seededRand(key, offset) {
 // 5 real-world frame materials (wood, metal). Each drives all frame + plaque styling.
 const FRAME_VARIANTS = [
   {
-    id: "gesso",
-    // Gilded gesso on walnut — altarpiece gold leaf over chalk ground, warm and uneven
+    id: "heraldic",
+    // Aged gold (Or) — coat-of-arms multi-ring border, gesso cross-hatch, tarnished altarpiece gold
     frameBg: [
-      // Gesso cross-hatch base beneath the gold — fine tool marks
-      "repeating-linear-gradient(14deg, rgba(0,0,0,0.07) 0px, transparent 1px, transparent 5px, rgba(0,0,0,0.04) 6px, transparent 7px)",
+      "repeating-linear-gradient(14deg, rgba(0,0,0,0.08) 0px, transparent 1px, transparent 5px, rgba(0,0,0,0.04) 6px, transparent 7px)",
       "repeating-linear-gradient(104deg, rgba(0,0,0,0.05) 0px, transparent 2px, transparent 7px, rgba(0,0,0,0.02) 8px, transparent 9px)",
-      // Uneven gold wear — bright where burnished, dark in recesses
-      "radial-gradient(ellipse 130% 70% at 28% 22%, rgba(210,172,55,0.36) 0%, transparent 58%)",
-      "radial-gradient(ellipse 80% 55% at 72% 78%, rgba(44,24,2,0.40) 0%, transparent 52%)",
-      "linear-gradient(150deg, #9a6c06 0%, #bc8a14 14%, #845804 30%, #ae7a0c 46%, #745004 62%, #a06c0c 78%, #845808 100%)",
+      "radial-gradient(ellipse 130% 70% at 28% 22%, rgba(200,162,48,0.34) 0%, transparent 58%)",
+      "radial-gradient(ellipse 80% 55% at 72% 78%, rgba(40,20,0,0.44) 0%, transparent 52%)",
+      "linear-gradient(150deg, #8c6004 0%, #ae7c10 14%, #7a5002 30%, #a26e08 46%, #684a02 62%, #926010 78%, #785004 100%)",
     ].join(","),
-    framePad: 14, outerBorder: "3px solid #3e2600",
-    innerLine: "1.5px solid rgba(196,154,38,0.40)", innerInset: 6,
+    framePad: 16, outerBorder: "2px solid #280e00",
+    innerLine: "1.5px solid rgba(208,166,50,0.62)", innerInset: 5,
+    innerLine2: "1px solid rgba(70,36,0,0.55)", innerInset2: 10,
     shadow: [
-      "0 0 0 2px #281600",
-      // Bright top-left bevel (light catches the raised gilded edge), dark bottom-right recess
-      "inset 0 3px 3px rgba(220,182,72,0.42)", "inset 3px 0 2px rgba(200,162,54,0.28)",
-      "inset 0 -5px 10px rgba(30,14,0,0.84)", "inset -5px 0 10px rgba(38,18,0,0.70)",
-      "inset 0 0 22px rgba(0,0,0,0.36)",
-      "0 5px 20px rgba(0,0,0,0.80)", "0 14px 40px rgba(0,0,0,0.60)",
+      "0 0 0 1px #b47a0c",   // bright Or-gold ring — heraldic ring border
+      "0 0 0 3px #281000",   // dark outer band
+      "inset 0 3px 3px rgba(218,178,68,0.44)", "inset 3px 0 2px rgba(196,158,52,0.30)",
+      "inset 0 -5px 10px rgba(28,12,0,0.86)", "inset -5px 0 10px rgba(36,16,0,0.72)",
+      "inset 0 0 22px rgba(0,0,0,0.38)",
+      "0 6px 22px rgba(0,0,0,0.82)", "0 14px 42px rgba(0,0,0,0.62)",
     ].join(","),
-    glow: "rgba(162,122,20,0.24)",
-    cornerChar: "✿", cornerColor: "rgba(178,136,28,0.94)", cornerFontSize: 13,
-    cornerShadow: "0 1px 0 rgba(0,0,0,0.84), 0 -1px 0 rgba(218,178,70,0.28), 0 0 5px rgba(120,88,10,0.44)",
+    glow: "rgba(152,112,16,0.22)",
+    cornerChar: "⚜", cornerColor: "rgba(196,152,36,0.96)", cornerFontSize: 14,
+    cornerShadow: "0 1px 0 rgba(0,0,0,0.88), 0 -1px 0 rgba(226,184,70,0.28), 0 0 6px rgba(126,86,6,0.46)",
     cornerRotations: [0,0,0,0],
-    imageBg: "radial-gradient(ellipse at 36% 28%, #1a1202, #0a0800)",
+    imageBg: "radial-gradient(ellipse at 36% 28%, #1c1402, #0c0800)",
     plaqueBg: [
-      "repeating-linear-gradient(15deg, rgba(0,0,0,0.10) 0px, transparent 2px, transparent 6px, rgba(0,0,0,0.05) 7px, transparent 8px)",
-      "radial-gradient(ellipse 100% 55% at 50% 28%, rgba(138,100,16,0.12) 0%, transparent 68%)",
-      "linear-gradient(180deg, #261a02 0%, #1a1200 50%, #120e00 100%)",
+      "repeating-linear-gradient(15deg, rgba(0,0,0,0.12) 0px, transparent 2px, transparent 6px, rgba(0,0,0,0.06) 7px, transparent 8px)",
+      "radial-gradient(ellipse 100% 55% at 50% 28%, rgba(126,92,12,0.12) 0%, transparent 68%)",
+      "linear-gradient(180deg, #241a02 0%, #181200 50%, #100e00 100%)",
     ].join(","),
-    plaqueBorder: "#6e5008",
-    plaqueShadow: "0 4px 18px rgba(0,0,0,0.86), inset 0 1px 0 rgba(178,136,28,0.18), inset 0 -2px 5px rgba(0,0,0,0.72)",
-    plaqueText: "#9c741a", chainColor: "#5e4206", nameColor: "#c49024",
-    nameShadow: "0 2px 0 rgba(0,0,0,0.90), 0 0 9px rgba(138,96,14,0.36)",
+    plaqueBorder: "#6a4a06",
+    plaqueShadow: "0 4px 18px rgba(0,0,0,0.88), inset 0 1px 0 rgba(196,152,36,0.20), inset 0 -2px 5px rgba(0,0,0,0.74)",
+    plaqueText: "#986a16", chainColor: "#584004", nameColor: "#be8c1e",
+    nameShadow: "0 2px 0 rgba(0,0,0,0.92), 0 0 9px rgba(126,82,10,0.36)",
   },
   {
     id: "walnut",
-    // Dark carved walnut — deep grain figure, linenfold shadows, rope-twist bevel
+    // Dark carved walnut — iron-ring banded, deep grain figure, near-black
     frameBg: [
-      // Strong wood grain — irregular stripes simulate deep carved walnut figure
-      "repeating-linear-gradient(2deg, rgba(0,0,0,0.30) 0px, transparent 1px, rgba(0,0,0,0.16) 3px, transparent 5px, rgba(0,0,0,0.09) 8px, transparent 11px, rgba(0,0,0,0.06) 15px, transparent 19px)",
-      // Cross-grain suggestion of carved linenfold panels
-      "repeating-linear-gradient(92deg, rgba(0,0,0,0.10) 0px, transparent 9px, rgba(0,0,0,0.06) 15px, transparent 22px)",
-      // Warm highlight on top-left carved edge where light catches the raised molding
-      "radial-gradient(ellipse 110% 58% at 20% 18%, rgba(130,82,28,0.32) 0%, transparent 55%)",
-      "linear-gradient(165deg, #2a1a06 0%, #1c0e04 28%, #281806 52%, #140c02 76%, #1e1204 100%)",
+      "repeating-linear-gradient(2deg, rgba(0,0,0,0.32) 0px, transparent 1px, rgba(0,0,0,0.18) 3px, transparent 5px, rgba(0,0,0,0.10) 8px, transparent 12px, rgba(0,0,0,0.06) 16px, transparent 20px)",
+      "repeating-linear-gradient(92deg, rgba(0,0,0,0.11) 0px, transparent 9px, rgba(0,0,0,0.06) 16px, transparent 23px)",
+      "radial-gradient(ellipse 110% 58% at 20% 18%, rgba(118,74,22,0.30) 0%, transparent 55%)",
+      "linear-gradient(165deg, #241602 0%, #180a00 28%, #221200 52%, #100800 76%, #1a1000 100%)",
     ].join(","),
-    framePad: 15, outerBorder: "3px solid #0a0400",
-    innerLine: "1px solid rgba(92,58,18,0.28)", innerInset: 8,
+    framePad: 15, outerBorder: "3px solid #080200",
+    innerLine: "1.5px solid rgba(170,122,44,0.46)", innerInset: 5,
+    innerLine2: "1px solid rgba(24,10,0,0.58)", innerInset2: 10,
     shadow: [
-      "0 0 0 2px #060200", "0 0 0 5px rgba(24,10,0,0.42)",
-      "inset 0 3px 3px rgba(112,70,22,0.36)", "inset 3px 0 3px rgba(92,58,16,0.22)",
-      "inset 0 -6px 14px rgba(0,0,0,0.90)", "inset -6px 0 14px rgba(0,0,0,0.72)",
-      "inset 0 0 32px rgba(0,0,0,0.56)",
-      "0 7px 22px rgba(0,0,0,0.90)", "0 16px 44px rgba(0,0,0,0.70)",
+      "0 0 0 2px #0c0600",   // iron-black band
+      "0 0 0 4px #261200",   // dark walnut ring
+      "inset 0 3px 3px rgba(106,66,18,0.36)", "inset 3px 0 3px rgba(86,52,12,0.22)",
+      "inset 0 -6px 14px rgba(0,0,0,0.92)", "inset -6px 0 14px rgba(0,0,0,0.74)",
+      "inset 0 0 32px rgba(0,0,0,0.58)",
+      "0 7px 22px rgba(0,0,0,0.92)", "0 16px 44px rgba(0,0,0,0.72)",
     ].join(","),
-    glow: "rgba(72,40,8,0.18)",
-    cornerChar: "❦", cornerColor: "rgba(118,74,20,0.90)", cornerFontSize: 14,
-    cornerShadow: "0 1px 0 rgba(0,0,0,0.92), 0 -1px 0 rgba(150,96,30,0.20), 0 0 4px rgba(0,0,0,0.72)",
+    glow: "rgba(66,34,4,0.16)",
+    cornerChar: "❦", cornerColor: "rgba(112,68,16,0.92)", cornerFontSize: 14,
+    cornerShadow: "0 1px 0 rgba(0,0,0,0.94), 0 -1px 0 rgba(146,90,26,0.18), 0 0 4px rgba(0,0,0,0.74)",
     cornerRotations: [0, 180, 180, 0],
-    imageBg: "radial-gradient(ellipse at 38% 30%, #160e02, #080400)",
+    imageBg: "radial-gradient(ellipse at 38% 30%, #140a00, #060400)",
     plaqueBg: [
-      "repeating-linear-gradient(2deg, rgba(0,0,0,0.28) 0px, transparent 1px, rgba(0,0,0,0.13) 3px, transparent 6px, rgba(0,0,0,0.07) 10px, transparent 14px)",
-      "repeating-linear-gradient(92deg, rgba(0,0,0,0.10) 0px, transparent 10px, rgba(0,0,0,0.05) 17px, transparent 24px)",
-      "linear-gradient(180deg, #201404 0%, #160a00 50%, #0e0800 100%)",
+      "repeating-linear-gradient(2deg, rgba(0,0,0,0.30) 0px, transparent 1px, rgba(0,0,0,0.15) 3px, transparent 6px, rgba(0,0,0,0.08) 10px, transparent 14px)",
+      "repeating-linear-gradient(92deg, rgba(0,0,0,0.11) 0px, transparent 11px, rgba(0,0,0,0.05) 18px, transparent 25px)",
+      "linear-gradient(180deg, #1e1200 0%, #120800 50%, #0c0600 100%)",
     ].join(","),
-    plaqueBorder: "#341c08",
-    plaqueShadow: "0 5px 18px rgba(0,0,0,0.94), inset 0 1px 0 rgba(112,70,22,0.14), inset 0 -2px 5px rgba(0,0,0,0.78)",
-    plaqueText: "#745420", chainColor: "#2c1606", nameColor: "#9e6c2c",
-    nameShadow: "0 2px 0 rgba(0,0,0,0.94), 0 0 8px rgba(62,34,4,0.34)",
+    plaqueBorder: "#2e1600",
+    plaqueShadow: "0 5px 18px rgba(0,0,0,0.96), inset 0 1px 0 rgba(106,66,18,0.14), inset 0 -2px 5px rgba(0,0,0,0.80)",
+    plaqueText: "#6a4e16", chainColor: "#261200", nameColor: "#926828",
+    nameShadow: "0 2px 0 rgba(0,0,0,0.96), 0 0 8px rgba(56,28,0,0.32)",
   },
   {
-    id: "polychrome",
-    // Painted altarpiece panel — deep vermilion with gold-leaf raised inner bevel, Gothic church panel
+    id: "crimson",
+    // Heraldic Gules (crimson) with Or-gold rings — coat-of-arms vermilion panel
     frameBg: [
-      // Brushstroke texture — slight horizontal and vertical stroke patterns
-      "repeating-linear-gradient(88deg, rgba(0,0,0,0.10) 0px, transparent 3px, rgba(0,0,0,0.05) 6px, transparent 10px)",
-      "repeating-linear-gradient(178deg, rgba(0,0,0,0.08) 0px, transparent 4px, rgba(0,0,0,0.04) 8px, transparent 13px)",
-      // Aged paint — corners darker from handling, slight lighter center
-      "radial-gradient(ellipse 90% 70% at 22% 20%, rgba(160,32,16,0.28) 0%, transparent 60%)",
-      "radial-gradient(ellipse 80% 50% at 75% 80%, rgba(0,0,0,0.48) 0%, transparent 55%)",
-      "linear-gradient(152deg, #4e100a 0%, #3c0c06 20%, #340a04 40%, #420c08 60%, #2c0804 80%, #380a06 100%)",
+      "repeating-linear-gradient(88deg, rgba(0,0,0,0.11) 0px, transparent 3px, rgba(0,0,0,0.05) 6px, transparent 10px)",
+      "repeating-linear-gradient(178deg, rgba(0,0,0,0.09) 0px, transparent 4px, rgba(0,0,0,0.04) 8px, transparent 13px)",
+      "radial-gradient(ellipse 90% 70% at 22% 20%, rgba(136,26,12,0.26) 0%, transparent 60%)",
+      "radial-gradient(ellipse 80% 50% at 75% 80%, rgba(0,0,0,0.54) 0%, transparent 55%)",
+      "linear-gradient(152deg, #4a0c08 0%, #380806 20%, #2e0602 40%, #3e0a04 60%, #260400 80%, #340806 100%)",
     ].join(","),
-    framePad: 13, outerBorder: "3px solid #200202",
-    innerLine: "2px solid rgba(178,134,28,0.52)", innerInset: 6,
+    framePad: 14, outerBorder: "2px solid #1c0000",
+    innerLine: "2px solid rgba(182,140,26,0.68)", innerInset: 5,
+    innerLine2: "1px solid rgba(96,16,6,0.55)", innerInset2: 10,
     shadow: [
-      "0 0 0 1px #160000",
-      // Gold-leaf bevel on inner raised edge — bright top-left
-      "inset 0 3px 3px rgba(188,148,44,0.36)", "inset 3px 0 3px rgba(168,130,36,0.22)",
-      "inset 0 -5px 10px rgba(8,0,0,0.84)", "inset -5px 0 10px rgba(10,0,0,0.68)",
-      "inset 0 0 22px rgba(0,0,0,0.40)",
-      "0 5px 20px rgba(0,0,0,0.82)", "0 14px 38px rgba(0,0,0,0.62)",
+      "0 0 0 1px #b27808",   // Or-gold ring on Gules — classic heraldic tincture combo
+      "0 0 0 3px #1c0200",   // dark crimson-black band
+      "inset 0 3px 3px rgba(188,146,38,0.36)", "inset 3px 0 3px rgba(168,128,30,0.22)",
+      "inset 0 -5px 10px rgba(8,0,0,0.88)", "inset -5px 0 10px rgba(10,0,0,0.72)",
+      "inset 0 0 22px rgba(0,0,0,0.44)",
+      "0 5px 20px rgba(0,0,0,0.84)", "0 14px 40px rgba(0,0,0,0.64)",
     ].join(","),
-    glow: "rgba(110,22,8,0.26)",
-    cornerChar: "✙", cornerColor: "rgba(174,134,28,0.92)", cornerFontSize: 13,
-    cornerShadow: "0 1px 0 rgba(0,0,0,0.88), 0 0 5px rgba(110,76,10,0.36)",
+    glow: "rgba(96,16,4,0.24)",
+    cornerChar: "✙", cornerColor: "rgba(176,134,24,0.94)", cornerFontSize: 13,
+    cornerShadow: "0 1px 0 rgba(0,0,0,0.90), 0 0 6px rgba(108,72,6,0.38)",
     cornerRotations: [0,0,0,0],
-    imageBg: "radial-gradient(ellipse at 36% 28%, #180a04, #080200)",
+    imageBg: "radial-gradient(ellipse at 36% 28%, #160400, #080000)",
     plaqueBg: [
-      "repeating-linear-gradient(90deg, rgba(0,0,0,0.12) 0px, transparent 4px, rgba(0,0,0,0.06) 8px, transparent 13px)",
+      "repeating-linear-gradient(90deg, rgba(0,0,0,0.13) 0px, transparent 4px, rgba(0,0,0,0.06) 8px, transparent 13px)",
       "repeating-linear-gradient(180deg, rgba(0,0,0,0.10) 0px, transparent 4px, rgba(0,0,0,0.05) 9px, transparent 14px)",
-      "linear-gradient(180deg, #260800 0%, #1a0600 50%, #140400 100%)",
+      "linear-gradient(180deg, #200400 0%, #140200 50%, #0e0000 100%)",
     ].join(","),
-    plaqueBorder: "#6e4008",
-    plaqueShadow: "0 4px 18px rgba(0,0,0,0.88), inset 0 1px 0 rgba(178,134,28,0.16), inset 0 -2px 5px rgba(0,0,0,0.74)",
-    plaqueText: "#946a1e", chainColor: "#522c04", nameColor: "#b88424",
-    nameShadow: "0 2px 0 rgba(0,0,0,0.92), 0 0 9px rgba(90,40,6,0.38)",
+    plaqueBorder: "#683c06",
+    plaqueShadow: "0 4px 18px rgba(0,0,0,0.90), inset 0 1px 0 rgba(176,134,24,0.18), inset 0 -2px 5px rgba(0,0,0,0.76)",
+    plaqueText: "#8a5c14", chainColor: "#4c2800", nameColor: "#ae7a18",
+    nameShadow: "0 2px 0 rgba(0,0,0,0.94), 0 0 9px rgba(86,36,2,0.38)",
   },
   {
     id: "iron",
-    // Hand-forged wrought iron — near-black, hammer-pitted, almost no reflectivity
+    // Hand-forged wrought iron — near-black, hammer-pitted, Maltese cross corners
     frameBg: [
-      // Hammer-pitting texture — fine irregular dimples in varying directions
-      "repeating-linear-gradient(155deg, rgba(255,255,255,0.010) 0px, transparent 2px, rgba(255,255,255,0.005) 5px, transparent 8px)",
-      "repeating-linear-gradient(65deg, rgba(90,46,18,0.06) 0px, transparent 3px, rgba(60,26,10,0.04) 7px, transparent 11px)",
-      "repeating-linear-gradient(10deg, rgba(0,0,0,0.18) 0px, transparent 4px, rgba(0,0,0,0.09) 7px, transparent 12px)",
-      // Slight warmth from forge fire in highlights, deep black in recesses
-      "radial-gradient(ellipse 80% 50% at 25% 20%, rgba(54,58,58,0.38) 0%, transparent 55%)",
-      "linear-gradient(158deg, #262828 0%, #181c1c 18%, #222424 36%, #141818 52%, #1e2020 70%, #121616 86%, #1a1c1c 100%)",
+      "repeating-linear-gradient(155deg, rgba(255,255,255,0.010) 0px, transparent 2px, rgba(255,255,255,0.004) 5px, transparent 8px)",
+      "repeating-linear-gradient(65deg, rgba(78,38,14,0.06) 0px, transparent 3px, rgba(52,22,8,0.04) 7px, transparent 11px)",
+      "repeating-linear-gradient(10deg, rgba(0,0,0,0.20) 0px, transparent 4px, rgba(0,0,0,0.10) 7px, transparent 12px)",
+      "radial-gradient(ellipse 80% 50% at 25% 20%, rgba(48,52,52,0.36) 0%, transparent 55%)",
+      "linear-gradient(158deg, #202222 0%, #141818 18%, #1c1e1e 36%, #101414 52%, #181a1a 70%, #0e1212 86%, #161818 100%)",
     ].join(","),
-    framePad: 14, outerBorder: "4px solid #080a0a",
-    innerLine: "1px solid rgba(52,62,62,0.28)", innerInset: 8,
+    framePad: 14, outerBorder: "4px solid #060808",
+    innerLine: "1.5px solid rgba(70,82,82,0.42)", innerInset: 5,
+    innerLine2: "1px solid rgba(16,22,22,0.60)", innerInset2: 10,
     shadow: [
-      "0 0 0 2px #040606",
-      "inset 0 2px 4px rgba(72,82,82,0.20)", "inset 2px 0 4px rgba(58,68,68,0.13)",
-      "inset 0 -6px 14px rgba(0,0,0,0.92)", "inset -6px 0 14px rgba(0,0,0,0.74)",
-      "inset 0 0 28px rgba(0,0,0,0.52)",
-      "0 7px 22px rgba(0,0,0,0.94)", "0 16px 44px rgba(0,0,0,0.74)",
+      "0 0 0 1px #3c4646",   // faint iron-grey ring
+      "0 0 0 3px #060a0a",   // near-black outer ring
+      "inset 0 2px 4px rgba(66,76,76,0.20)", "inset 2px 0 4px rgba(52,62,62,0.12)",
+      "inset 0 -6px 14px rgba(0,0,0,0.94)", "inset -6px 0 14px rgba(0,0,0,0.76)",
+      "inset 0 0 28px rgba(0,0,0,0.54)",
+      "0 7px 22px rgba(0,0,0,0.96)", "0 16px 44px rgba(0,0,0,0.76)",
     ].join(","),
-    glow: "rgba(50,32,14,0.14)",
-    cornerChar: "✠", cornerColor: "rgba(64,74,74,0.92)", cornerFontSize: 12,
-    cornerShadow: "0 1px 0 rgba(0,0,0,0.98), 0 -1px 0 rgba(92,106,106,0.14), 0 0 2px rgba(0,0,0,0.84)",
+    glow: "rgba(40,24,8,0.12)",
+    cornerChar: "✠", cornerColor: "rgba(58,68,68,0.94)", cornerFontSize: 12,
+    cornerShadow: "0 1px 0 rgba(0,0,0,1.0), 0 -1px 0 rgba(84,98,98,0.12), 0 0 2px rgba(0,0,0,0.86)",
     cornerRotations: [0,0,0,0],
-    imageBg: "radial-gradient(ellipse at 35% 28%, #101212, #060808)",
+    imageBg: "radial-gradient(ellipse at 35% 28%, #0c0e0e, #040608)",
     plaqueBg: [
-      "repeating-linear-gradient(3deg, rgba(0,0,0,0.24) 0px, transparent 3px, rgba(0,0,0,0.12) 6px, transparent 10px)",
-      "repeating-linear-gradient(93deg, rgba(0,0,0,0.15) 0px, transparent 5px, rgba(0,0,0,0.07) 10px, transparent 16px)",
-      "linear-gradient(180deg, #181a1a 0%, #0e1212 50%, #0a0e0e 100%)",
+      "repeating-linear-gradient(3deg, rgba(0,0,0,0.26) 0px, transparent 3px, rgba(0,0,0,0.13) 6px, transparent 10px)",
+      "repeating-linear-gradient(93deg, rgba(0,0,0,0.17) 0px, transparent 5px, rgba(0,0,0,0.08) 10px, transparent 16px)",
+      "linear-gradient(180deg, #121414 0%, #0a0e0e 50%, #080c0c 100%)",
     ].join(","),
-    plaqueBorder: "#222c2c",
-    plaqueShadow: "0 4px 18px rgba(0,0,0,0.96), inset 0 1px 0 rgba(72,86,86,0.09), inset 0 -2px 5px rgba(0,0,0,0.80)",
-    plaqueText: "#4e6868", chainColor: "#1e2828", nameColor: "#6e8a8a",
-    nameShadow: "0 2px 0 rgba(0,0,0,0.98), 0 0 6px rgba(48,66,66,0.26)",
+    plaqueBorder: "#1c2828",
+    plaqueShadow: "0 4px 18px rgba(0,0,0,0.98), inset 0 1px 0 rgba(66,80,80,0.08), inset 0 -2px 5px rgba(0,0,0,0.82)",
+    plaqueText: "#3e5858", chainColor: "#161e1e", nameColor: "#587070",
+    nameShadow: "0 2px 0 rgba(0,0,0,1.0), 0 0 6px rgba(40,58,58,0.24)",
   },
   {
     id: "limestone",
-    // Carved limestone — aged grey-cream stone, chisel-marked, like a funerary slab
+    // Carved limestone — stepped molding rings, chisel marks, funerary slab grey-cream
     frameBg: [
-      // Chisel marks — fine angled grooves cut by stonemason's tools
-      "repeating-linear-gradient(22deg, rgba(0,0,0,0.09) 0px, transparent 1px, rgba(0,0,0,0.04) 3px, transparent 5px, rgba(255,255,255,0.018) 7px, transparent 9px)",
-      "repeating-linear-gradient(112deg, rgba(0,0,0,0.06) 0px, transparent 2px, rgba(0,0,0,0.03) 5px, transparent 8px)",
-      // Stone surface variation — hand-quarried, slightly uneven face
-      "radial-gradient(ellipse 100% 65% at 30% 25%, rgba(200,180,140,0.18) 0%, transparent 60%)",
-      "radial-gradient(ellipse 70% 50% at 68% 72%, rgba(0,0,0,0.24) 0%, transparent 55%)",
-      "linear-gradient(152deg, #504638 0%, #3e3828 18%, #483e30 36%, #363224 52%, #443c2e 70%, #322e22 86%, #3e3828 100%)",
+      "repeating-linear-gradient(22deg, rgba(0,0,0,0.10) 0px, transparent 1px, rgba(0,0,0,0.05) 3px, transparent 5px, rgba(255,255,255,0.020) 7px, transparent 9px)",
+      "repeating-linear-gradient(112deg, rgba(0,0,0,0.07) 0px, transparent 2px, rgba(0,0,0,0.03) 5px, transparent 8px)",
+      "radial-gradient(ellipse 100% 65% at 30% 25%, rgba(188,170,130,0.17) 0%, transparent 60%)",
+      "radial-gradient(ellipse 70% 50% at 68% 72%, rgba(0,0,0,0.26) 0%, transparent 55%)",
+      "linear-gradient(152deg, #484038 0%, #3c3628 18%, #423e30 36%, #302c22 52%, #3c3628 70%, #2c2a1e 86%, #363428 100%)",
     ].join(","),
-    framePad: 14, outerBorder: "3px solid #221e14",
-    innerLine: "1px solid rgba(166,148,108,0.20)", innerInset: 7,
+    framePad: 14, outerBorder: "3px solid #201e14",
+    innerLine: "1.5px solid rgba(186,168,126,0.42)", innerInset: 5,
+    innerLine2: "1px solid rgba(28,26,16,0.52)", innerInset2: 10,
     shadow: [
-      "0 0 0 2px #1a1610",
-      // Carved bevel — top-left lighter (cut face of stone), bottom-right deep recess
-      "inset 0 3px 3px rgba(176,158,116,0.26)", "inset 3px 0 3px rgba(156,140,98,0.16)",
-      "inset 0 -5px 12px rgba(0,0,0,0.80)", "inset -5px 0 12px rgba(0,0,0,0.64)",
-      "inset 0 0 24px rgba(0,0,0,0.42)",
-      "0 6px 20px rgba(0,0,0,0.84)", "0 14px 40px rgba(0,0,0,0.64)",
+      "0 0 0 1px #b8a87e",   // cream stone highlight ring — dressed stone outer edge
+      "0 0 0 3px #1c1a10",   // dark mortar/shadow ring
+      "inset 0 3px 3px rgba(168,150,108,0.28)", "inset 3px 0 3px rgba(148,132,92,0.17)",
+      "inset 0 -5px 12px rgba(0,0,0,0.82)", "inset -5px 0 12px rgba(0,0,0,0.66)",
+      "inset 0 0 24px rgba(0,0,0,0.44)",
+      "0 6px 20px rgba(0,0,0,0.86)", "0 14px 40px rgba(0,0,0,0.66)",
     ].join(","),
-    glow: "rgba(110,96,62,0.20)",
-    cornerChar: "❧", cornerColor: "rgba(152,136,96,0.86)", cornerFontSize: 14,
-    cornerShadow: "0 1px 0 rgba(0,0,0,0.84), 0 -1px 0 rgba(196,178,136,0.16), 0 0 4px rgba(0,0,0,0.64)",
+    glow: "rgba(100,88,54,0.18)",
+    cornerChar: "❧", cornerColor: "rgba(144,128,88,0.90)", cornerFontSize: 14,
+    cornerShadow: "0 1px 0 rgba(0,0,0,0.86), 0 -1px 0 rgba(190,172,130,0.14), 0 0 4px rgba(0,0,0,0.66)",
     cornerRotations: [0, 180, 180, 0],
-    imageBg: "radial-gradient(ellipse at 36% 28%, #1a1810, #0c0a06)",
+    imageBg: "radial-gradient(ellipse at 36% 28%, #16140e, #0a0806)",
     plaqueBg: [
-      "repeating-linear-gradient(24deg, rgba(0,0,0,0.10) 0px, transparent 2px, rgba(0,0,0,0.05) 4px, transparent 7px, rgba(255,255,255,0.012) 9px, transparent 11px)",
-      "repeating-linear-gradient(114deg, rgba(0,0,0,0.07) 0px, transparent 3px, rgba(0,0,0,0.03) 7px, transparent 11px)",
-      "linear-gradient(180deg, #34301e 0%, #28241a 50%, #201c14 100%)",
+      "repeating-linear-gradient(24deg, rgba(0,0,0,0.11) 0px, transparent 2px, rgba(0,0,0,0.05) 4px, transparent 7px, rgba(255,255,255,0.013) 9px, transparent 11px)",
+      "repeating-linear-gradient(114deg, rgba(0,0,0,0.08) 0px, transparent 3px, rgba(0,0,0,0.04) 7px, transparent 11px)",
+      "linear-gradient(180deg, #2e2a1c 0%, #22201a 50%, #1a1812 100%)",
     ].join(","),
-    plaqueBorder: "#524a38",
-    plaqueShadow: "0 4px 18px rgba(0,0,0,0.86), inset 0 1px 0 rgba(166,148,108,0.14), inset 0 -2px 5px rgba(0,0,0,0.70)",
-    plaqueText: "#948464", chainColor: "#3c3828", nameColor: "#b4a078",
-    nameShadow: "0 2px 0 rgba(0,0,0,0.90), 0 0 8px rgba(90,78,46,0.30)",
+    plaqueBorder: "#484038",
+    plaqueShadow: "0 4px 18px rgba(0,0,0,0.88), inset 0 1px 0 rgba(158,142,100,0.13), inset 0 -2px 5px rgba(0,0,0,0.72)",
+    plaqueText: "#887858", chainColor: "#363220", nameColor: "#aa9868",
+    nameShadow: "0 2px 0 rgba(0,0,0,0.92), 0 0 8px rgba(82,70,38,0.28)",
   },
 ];
 
-// Medieval frame shapes: rect (reliquary panel), lancet (Gothic window arch),
-// arch (Romanesque round arch), round (heraldic roundel), shield (escutcheon)
+// Medieval frame shapes — inspired by heraldic coat-of-arms and Gothic architectural forms
 const SHAPE_KEYS = ["rect", "lancet", "arch", "round", "shield"];
 const SHAPE_DEFS = {
+  // Rectangular reliquary panel — classic portrait, ornate molded border
   rect: (imgW, imgH) => ({
     id:"rect", imgW, imgH,
-    frameRadius:"3px", canvasRadius:"0", filigreeRadius:"1px",
+    frameRadius:"3px", canvasRadius:"0",
+    filigreeRadius:"2px", filigreeRadius2:"2px",
     corners:[true,true,true,true],
   }),
-  // Lancet arch — tall narrow Gothic window, half-circle top over portrait format
-  lancet: (imgW, imgH) => {
+  // Lancet arch — tall narrow Gothic window, the defining shape of medieval church architecture
+  lancet: (imgW, imgH, _fp, _ii, _ii2) => {
     const w = Math.round(imgW * 0.72);
     const h = Math.round(imgH * 1.08);
+    const r = Math.round(w / 2);
     return {
       id:"lancet", imgW:w, imgH:h,
-      frameRadius:`${Math.round(w/2)}px ${Math.round(w/2)}px 3px 3px`,
-      canvasRadius:`${Math.round(w/2)-2}px ${Math.round(w/2)-2}px 0 0`,
-      filigreeRadius:`${Math.round(w/2)-4}px ${Math.round(w/2)-4}px 1px 1px`,
+      frameRadius:`${r}px ${r}px 3px 3px`,
+      canvasRadius:`${r-2}px ${r-2}px 0 0`,
+      filigreeRadius:`${r-5}px ${r-5}px 1px 1px`,
+      filigreeRadius2:`${r-9}px ${r-9}px 1px 1px`,
       corners:[false,false,true,true],
     };
   },
-  arch: (imgW, imgH, fp, ii) => {
+  // Romanesque round arch — semicircular top, broader and heavier than lancet
+  arch: (imgW, imgH, fp, ii, ii2) => {
     const tw = imgW + 2*fp;
     return {
       id:"arch", imgW, imgH,
       frameRadius:`${tw/2}px ${tw/2}px 4px 4px`,
       canvasRadius:`${imgW/2}px ${imgW/2}px 0 0`,
       filigreeRadius:`${(tw-2*ii)/2}px ${(tw-2*ii)/2}px 2px 2px`,
+      filigreeRadius2:`${(tw-2*(ii2||ii+5))/2}px ${(tw-2*(ii2||ii+5))/2}px 2px 2px`,
       corners:[false,false,true,true],
     };
   },
+  // Heraldic roundel — circular medallion, used for seals and badges
   round: (imgW, imgH) => {
     const s = Math.min(imgW, imgH);
     return {
       id:"round", imgW:s, imgH:s,
-      frameRadius:"50%", canvasRadius:"50%", filigreeRadius:"50%",
+      frameRadius:"50%", canvasRadius:"50%",
+      filigreeRadius:"50%", filigreeRadius2:"50%",
       corners:[false,false,false,false],
     };
   },
+  // Heraldic escutcheon — classic heater shield, the central form of heraldry
   shield: (imgW, imgH) => ({
     id:"shield", imgW, imgH:Math.round(imgH*0.88),
     frameRadius:"6px 6px 48% 48% / 6px 6px 58% 58%",
-    canvasRadius:"2px 2px 48% 48% / 2px 2px 58% 58%",
+    canvasRadius:"2px 2px 46% 46% / 2px 2px 56% 56%",
     filigreeRadius:"4px 4px 48% 48% / 4px 4px 58% 58%",
+    filigreeRadius2:"5px 5px 46% 46% / 5px 5px 56% 56%",
     corners:[true,true,false,false],
   }),
 };
@@ -1291,8 +1296,8 @@ function TrophyRoom({ battles, players, trophyImages, setTrophyImages, trophyMet
           const fv = FRAME_VARIANTS[Math.floor(r3 * FRAME_VARIANTS.length)];
           const shapeKey = SHAPE_KEYS[Math.floor(r4 * SHAPE_KEYS.length)];
           const shapeFactory = SHAPE_DEFS[shapeKey];
-          const sh = shapeKey === "arch"
-            ? shapeFactory(baseDims.imgW, baseDims.imgH, fv.framePad, fv.innerInset)
+          const sh = (shapeKey === "arch" || shapeKey === "lancet")
+            ? shapeFactory(baseDims.imgW, baseDims.imgH, fv.framePad, fv.innerInset, fv.innerInset2)
             : shapeFactory(baseDims.imgW, baseDims.imgH);
           const dims = { imgW: sh.imgW, imgH: sh.imgH };
 
@@ -1304,19 +1309,22 @@ function TrophyRoom({ battles, players, trophyImages, setTrophyImages, trophyMet
           const plaqueW = sh.imgW + 2 * fv.framePad - 12;
 
           // Art button position varies by shape so it stays visible and unclipped
-          const artBtnPos = (sh.id === "oval" || sh.id === "round")
+          const artBtnPos = sh.id === "round"
             ? { bottom:14, left:"50%", transform:"translateX(-50%)" }
             : sh.id === "shield"
               ? { bottom:10, right:"18%" }
-              : { bottom:6, right:6 };
+              : sh.id === "lancet"
+                ? { bottom:8, left:"50%", transform:"translateX(-50%)" }
+                : { bottom:6, right:6 };
 
           return (
             <div key={t.key} style={{ transform:`rotate(${rotate}deg)`, transformOrigin:"center bottom", flexShrink:0, display:"flex", flexDirection:"column", alignItems:"center" }}>
 
               {/* ── Ornate portrait frame ── */}
               <div style={{ background:fv.frameBg, padding:fv.framePad, border:fv.outerBorder, borderRadius:sh.frameRadius, boxShadow:fv.shadow, position:"relative" }}>
-                {/* Inner filigree border */}
+                {/* Inner filigree borders — two rings create multi-layer heraldic border effect */}
                 <div style={{ position:"absolute", inset:fv.innerInset, border:fv.innerLine, borderRadius:sh.filigreeRadius, pointerEvents:"none", zIndex:3 }} />
+                {fv.innerLine2 && <div style={{ position:"absolute", inset:fv.innerInset2, border:fv.innerLine2, borderRadius:sh.filigreeRadius2, pointerEvents:"none", zIndex:3 }} />}
                 {/* Corner ornaments — only shown on corners supported by this shape */}
                 {[{top:0,left:2},{top:0,right:2},{bottom:0,left:2},{bottom:0,right:2}].map((pos, ci) =>
                   sh.corners[ci] ? (
