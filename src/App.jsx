@@ -1138,6 +1138,45 @@ const FRAME_VARIANTS = [
   },
 ];
 
+const SHAPE_KEYS = ["rect", "oval", "arch", "round", "shield"];
+const SHAPE_DEFS = {
+  rect: (imgW, imgH) => ({
+    id:"rect", imgW, imgH,
+    frameRadius:"4px", canvasRadius:"0", filigreeRadius:"2px",
+    corners:[true,true,true,true],
+  }),
+  oval: (imgW, imgH) => ({
+    id:"oval", imgW, imgH,
+    frameRadius:"50%", canvasRadius:"50%", filigreeRadius:"50%",
+    corners:[false,false,false,false],
+  }),
+  arch: (imgW, imgH, fp, ii) => {
+    const tw = imgW + 2*fp;
+    return {
+      id:"arch", imgW, imgH,
+      frameRadius:`${tw/2}px ${tw/2}px 4px 4px`,
+      canvasRadius:`${imgW/2}px ${imgW/2}px 0 0`,
+      filigreeRadius:`${(tw-2*ii)/2}px ${(tw-2*ii)/2}px 2px 2px`,
+      corners:[false,false,true,true],
+    };
+  },
+  round: (imgW, imgH) => {
+    const s = Math.min(imgW, imgH);
+    return {
+      id:"round", imgW:s, imgH:s,
+      frameRadius:"50%", canvasRadius:"50%", filigreeRadius:"50%",
+      corners:[false,false,false,false],
+    };
+  },
+  shield: (imgW, imgH) => ({
+    id:"shield", imgW, imgH:Math.round(imgH*0.88),
+    frameRadius:"6px 6px 48% 48% / 6px 6px 58% 58%",
+    canvasRadius:"2px 2px 48% 48% / 2px 2px 58% 58%",
+    filigreeRadius:"4px 4px 48% 48% / 4px 4px 58% 58%",
+    corners:[true,true,false,false],
+  }),
+};
+
 function TrophyRoom({ battles, players, trophyImages, setTrophyImages, trophyMeta, setTrophyMeta }) {
   const [editingKey, setEditingKey] = useState(null);
   const [urlInput, setUrlInput] = useState("");
@@ -1183,36 +1222,53 @@ function TrophyRoom({ battles, players, trophyImages, setTrophyImages, trophyMet
           const r1 = seededRand(t.key, 1); // size
           const r2 = seededRand(t.key, 2); // rotation
           const r3 = seededRand(t.key, 3); // frame material
+          const r4 = seededRand(t.key, 4); // shape
           const r7 = seededRand(t.key, 7); // placeholder
 
           // Portrait proportions ~2:3
           const sizeTier = r1 < 0.35 ? "sm" : r1 < 0.72 ? "md" : "lg";
-          const dims = { sm:{imgW:136,imgH:194}, md:{imgW:170,imgH:242}, lg:{imgW:208,imgH:298} }[sizeTier];
+          const baseDims = { sm:{imgW:136,imgH:194}, md:{imgW:170,imgH:242}, lg:{imgW:208,imgH:298} }[sizeTier];
           const nameSize = { sm:10, md:12, lg:14 }[sizeTier];
 
           const rotate = ((r2 * 6) - 3).toFixed(2);
           const fv = FRAME_VARIANTS[Math.floor(r3 * FRAME_VARIANTS.length)];
+          const shapeKey = SHAPE_KEYS[Math.floor(r4 * SHAPE_KEYS.length)];
+          const shapeFactory = SHAPE_DEFS[shapeKey];
+          const sh = shapeKey === "arch"
+            ? shapeFactory(baseDims.imgW, baseDims.imgH, fv.framePad, fv.innerInset)
+            : shapeFactory(baseDims.imgW, baseDims.imgH);
+          const dims = { imgW: sh.imgW, imgH: sh.imgH };
+
           const placeholder = TROPHY_PLACEHOLDERS[Math.floor(r7 * TROPHY_PLACEHOLDERS.length)];
           const playerColor = PLAYER_COLORS[players.indexOf(t.player) % PLAYER_COLORS.length];
           const imgUrl = trophyImages?.[t.key] || "";
           const isEditing = editingKey === t.key;
           const meta = trophyMeta?.[t.key] || {};
-          const plaqueW = dims.imgW + 2 * fv.framePad - 12;
+          const plaqueW = sh.imgW + 2 * fv.framePad - 12;
+
+          // Art button position varies by shape so it stays visible and unclipped
+          const artBtnPos = (sh.id === "oval" || sh.id === "round")
+            ? { bottom:14, left:"50%", transform:"translateX(-50%)" }
+            : sh.id === "shield"
+              ? { bottom:10, right:"18%" }
+              : { bottom:6, right:6 };
 
           return (
             <div key={t.key} style={{ transform:`rotate(${rotate}deg)`, transformOrigin:"center bottom", flexShrink:0, display:"flex", flexDirection:"column", alignItems:"center" }}>
 
               {/* ── Ornate portrait frame ── */}
-              <div style={{ background:fv.frameBg, padding:fv.framePad, border:fv.outerBorder, borderRadius:4, boxShadow:fv.shadow, position:"relative" }}>
+              <div style={{ background:fv.frameBg, padding:fv.framePad, border:fv.outerBorder, borderRadius:sh.frameRadius, boxShadow:fv.shadow, position:"relative" }}>
                 {/* Inner filigree border */}
-                <div style={{ position:"absolute", inset:fv.innerInset, border:fv.innerLine, borderRadius:2, pointerEvents:"none", zIndex:3 }} />
-                {/* Corner ornaments — Unicode decorative characters matching each material */}
-                {[{top:0,left:2},{top:0,right:2},{bottom:0,left:2},{bottom:0,right:2}].map((pos, ci) => (
-                  <div key={ci} style={{ position:"absolute", ...pos, zIndex:4, pointerEvents:"none", fontSize:fv.cornerFontSize, color:fv.cornerColor, textShadow:fv.cornerShadow, lineHeight:1, userSelect:"none", fontFamily:"serif", transform:`rotate(${(fv.cornerRotations||[0,0,0,0])[ci]}deg)` }}>{fv.cornerChar}</div>
-                ))}
+                <div style={{ position:"absolute", inset:fv.innerInset, border:fv.innerLine, borderRadius:sh.filigreeRadius, pointerEvents:"none", zIndex:3 }} />
+                {/* Corner ornaments — only shown on corners supported by this shape */}
+                {[{top:0,left:2},{top:0,right:2},{bottom:0,left:2},{bottom:0,right:2}].map((pos, ci) =>
+                  sh.corners[ci] ? (
+                    <div key={ci} style={{ position:"absolute", ...pos, zIndex:4, pointerEvents:"none", fontSize:fv.cornerFontSize, color:fv.cornerColor, textShadow:fv.cornerShadow, lineHeight:1, userSelect:"none", fontFamily:"serif", transform:`rotate(${(fv.cornerRotations||[0,0,0,0])[ci]}deg)` }}>{fv.cornerChar}</div>
+                  ) : null
+                )}
 
                 {/* Portrait canvas */}
-                <div style={{ width:dims.imgW, height:dims.imgH, position:"relative", overflow:"hidden", background:fv.imageBg }}>
+                <div style={{ width:dims.imgW, height:dims.imgH, position:"relative", overflow:"hidden", background:fv.imageBg, borderRadius:sh.canvasRadius }}>
                   {imgUrl ? (
                     <img src={imgUrl} alt={t.name} style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} onError={(e) => { e.target.style.display="none"; }} />
                   ) : (
@@ -1222,26 +1278,26 @@ function TrophyRoom({ battles, players, trophyImages, setTrophyImages, trophyMet
                   )}
                   {/* Add / change portrait art */}
                   <button onClick={() => { setEditingKey(isEditing ? null : t.key); setUrlInput(imgUrl); }}
-                    style={{ position:"absolute", bottom:6, right:6, background:"rgba(8,6,3,0.92)", border:`1px solid ${fv.plaqueBorder}88`, borderRadius:3, color:fv.plaqueText, padding:"3px 8px", fontSize:8, cursor:"pointer", fontFamily:"'MedievalSharp', cursive", letterSpacing:0.5, zIndex:5, opacity:0.82, transition:"opacity .15s" }}
+                    style={{ position:"absolute", ...artBtnPos, background:"rgba(8,6,3,0.92)", border:`1px solid ${fv.plaqueBorder}88`, borderRadius:3, color:fv.plaqueText, padding:"3px 8px", fontSize:8, cursor:"pointer", fontFamily:"'MedievalSharp', cursive", letterSpacing:0.5, zIndex:5, opacity:0.82, transition:"opacity .15s", whiteSpace:"nowrap" }}
                     onMouseEnter={(e) => e.currentTarget.style.opacity="1"} onMouseLeave={(e) => e.currentTarget.style.opacity="0.82"}>
                     {imgUrl ? "✦ art" : "+ art"}
                   </button>
                 </div>
-
-                {/* URL input panel */}
-                {isEditing && (
-                  <div style={{ padding:"8px", background:"#0a0805", borderTop:`1px solid ${fv.plaqueBorder}55` }}>
-                    <input autoFocus value={urlInput} onChange={(e) => setUrlInput(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === "Enter") commitUrl(t.key); if (e.key === "Escape") setEditingKey(null); }}
-                      placeholder="Paste image URL…"
-                      style={{ width:"100%", background:"#0d0b09", border:`1px solid ${fv.plaqueBorder}88`, borderRadius:3, color:"#c4a97d", padding:"4px 6px", fontSize:9, fontFamily:"'Spectral', serif", boxSizing:"border-box" }} />
-                    <div style={{ display:"flex", gap:4, marginTop:5 }}>
-                      <button onClick={() => commitUrl(t.key)} style={{ flex:1, background:"#1a1510", border:`1px solid ${fv.plaqueBorder}`, borderRadius:3, color:fv.plaqueText, padding:"3px 0", fontSize:9, cursor:"pointer", fontFamily:"'MedievalSharp', cursive" }}>✓ Hang it</button>
-                      <button onClick={() => setEditingKey(null)} style={{ background:"#1a1510", border:"1px solid #3a3020", borderRadius:3, color:"#5c4a32", padding:"3px 8px", fontSize:9, cursor:"pointer", fontFamily:"'MedievalSharp', cursive" }}>✕</button>
-                    </div>
-                  </div>
-                )}
               </div>
+
+              {/* URL input panel — outside frame so it never gets clipped by shape */}
+              {isEditing && (
+                <div style={{ width:plaqueW, padding:"8px", background:"#0a0805", border:`1px solid ${fv.plaqueBorder}55`, borderRadius:"0 0 4px 4px", marginTop:2 }}>
+                  <input autoFocus value={urlInput} onChange={(e) => setUrlInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") commitUrl(t.key); if (e.key === "Escape") setEditingKey(null); }}
+                    placeholder="Paste image URL…"
+                    style={{ width:"100%", background:"#0d0b09", border:`1px solid ${fv.plaqueBorder}88`, borderRadius:3, color:"#c4a97d", padding:"4px 6px", fontSize:9, fontFamily:"'Spectral', serif", boxSizing:"border-box" }} />
+                  <div style={{ display:"flex", gap:4, marginTop:5 }}>
+                    <button onClick={() => commitUrl(t.key)} style={{ flex:1, background:"#1a1510", border:`1px solid ${fv.plaqueBorder}`, borderRadius:3, color:fv.plaqueText, padding:"3px 0", fontSize:9, cursor:"pointer", fontFamily:"'MedievalSharp', cursive" }}>✓ Hang it</button>
+                    <button onClick={() => setEditingKey(null)} style={{ background:"#1a1510", border:"1px solid #3a3020", borderRadius:3, color:"#5c4a32", padding:"3px 8px", fontSize:9, cursor:"pointer", fontFamily:"'MedievalSharp', cursive" }}>✕</button>
+                  </div>
+                </div>
+              )}
 
               {/* ── Chain / hook connector ── */}
               <div style={{ display:"flex", flexDirection:"column", alignItems:"center" }}>
