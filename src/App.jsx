@@ -1462,6 +1462,23 @@ export default function App() {
     return () => supabase.removeChannel(channel);
   }, [loaded]);
 
+  // Subscribe to realtime changes from other users.
+  useEffect(() => {
+    if (!supabase || !loaded) return;
+    const channel = supabase
+      .channel("campaign-sync")
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "campaigns", filter: `id=eq.${CAMPAIGN_ID}` }, ({ new: row }) => {
+        if (row.client_id === CLIENT_ID) return; // ignore our own echoes
+        const s = row.state;
+        if (!s) return;
+        setPlayers(s.players || DEFAULT_PLAYERS);
+        setBattles(s.battles || []);
+        setActiveBattleIdx(s.activeBattleIdx ?? 0);
+      })
+      .subscribe();
+    return () => supabase.removeChannel(channel);
+  }, [loaded]);
+
   const addBattle = () => { const name = newBattleName.trim() || `Encounter ${battles.length + 1}`; setBattles([...battles, createEmptyBattle(name, players)]); setActiveBattleIdx(battles.length); setNewBattleName(""); setShowNewBattle(false); setTab("entry"); };
   const deleteBattle = (idx) => { const next = battles.filter((_, i) => i !== idx); setBattles(next); setActiveBattleIdx(Math.min(activeBattleIdx, Math.max(0, next.length - 1))); };
   const updateBattleData = (data) => setBattles((p) => p.map((b, i) => i === activeBattleIdx ? { ...b, data } : b));
