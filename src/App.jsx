@@ -1626,42 +1626,44 @@ export default function App() {
       <link href="https://fonts.googleapis.com/css2?family=MedievalSharp&family=Spectral:ital,wght@0,400;0,600;0,700;1,400&family=Cinzel+Decorative:wght@700&display=swap" rel="stylesheet" />
 
       {/* Header */}
-      <div style={{ textAlign:"center", marginBottom:22, position:"relative" }}>
-        <div style={{ display:"flex", justifyContent:"center", alignItems:"center", gap:16, marginBottom:6 }}>
+      <div style={{ textAlign:"center", padding:"24px 16px 14px", marginBottom:"4px" }}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:12 }}>
           <D20Icon size={44} />
-          <h1 style={{ fontFamily:"'Cinzel Decorative', serif", fontSize:"clamp(22px, 4vw, 46px)", fontWeight:700, color:"#daa520", margin:0, letterSpacing:"clamp(2px, 0.5vw, 6px)", textShadow:"0 0 30px rgba(218,165,32,0.35), 0 0 10px rgba(218,165,32,0.15), 0 2px 6px rgba(0,0,0,0.7)" }}>
+          <div style={{ fontFamily:"'Cinzel Decorative', cursive", fontSize:"2.6rem", color:"#c8a84e", textShadow:"0 2px 14px rgba(200,168,78,0.35)", letterSpacing:"5px", textTransform:"uppercase", lineHeight:1.1, margin:0 }}>
             MORDEKAI'S BROKEN SEAL
-          </h1>
+          </div>
           <D20Icon size={44} />
         </div>
-        <div style={{ fontSize:11, textTransform:"uppercase", letterSpacing:4, color:"#5c4a32", fontWeight:600, fontFamily:"'Spectral', serif" }}>
+        <div style={{ fontSize:"0.6rem", color:"#8a7d65", marginTop:"5px", letterSpacing:"8px", textTransform:"uppercase", fontFamily:"'MedievalSharp', cursive" }}>
           Chronicle of Battle
         </div>
-        <div style={{ fontSize:11, color:"#6b5a3e", fontStyle:"italic", marginTop:5, fontFamily:"'Spectral', serif", display:"flex", justifyContent:"center", alignItems:"center", gap:8 }}>
+        <div style={{ fontSize:"0.68rem", color:"#8a7d65", marginTop:"5px", fontStyle:"italic", display:"flex", alignItems:"center", justifyContent:"center", gap:0 }}>
           <span>{battles.length} encounter{battles.length !== 1 ? "s" : ""} recorded · {players.length} adventurer{players.length !== 1 ? "s" : ""} in the party</span>
           {supabase && (
-            <span style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:9, textTransform:"uppercase", letterSpacing:1, fontStyle:"normal" }}>
-              <span style={{ width:6, height:6, borderRadius:"50%", background: syncStatus === "error" ? "#d4442a" : syncStatus === "saving" ? "#daa520" : "#2e8b57", boxShadow:`0 0 6px ${syncStatus === "error" ? "#d4442a" : syncStatus === "saving" ? "#daa520" : "#2e8b57"}88` }} />
-              <span style={{ color: syncStatus === "error" ? "#d4442a" : syncStatus === "saving" ? "#daa520" : "#2e8b57" }}>
-                {syncStatus === "error" ? "Sync error" : syncStatus === "saving" ? "Saving…" : "Live"}
-              </span>
+            <span style={{ fontStyle:"normal", fontWeight:600, color: syncStatus === "error" ? "#d4442a" : syncStatus === "saving" ? "#daa520" : "#4caf50", letterSpacing:"2px", marginLeft:"10px", fontSize:"0.62rem", display:"inline-flex", alignItems:"center", gap:"4px" }}>
+              <span style={{ width:"6px", height:"6px", borderRadius:"50%", display:"inline-block", background: syncStatus === "error" ? "#d4442a" : syncStatus === "saving" ? "#daa520" : "#4caf50", boxShadow:`0 0 4px ${syncStatus === "error" ? "#d4442a" : syncStatus === "saving" ? "#daa520" : "#4caf50"}` }} />
+              {syncStatus === "error" ? "Sync error" : syncStatus === "saving" ? "Saving…" : "Live"}
             </span>
           )}
         </div>
-        <div style={{ margin:"12px auto 0", width:"min(360px, 70%)", height:1, background:"linear-gradient(90deg, transparent, #8b6914 20%, #daa520 50%, #8b6914 80%, transparent)" }} />
+        <div style={{ height:"1px", background:"linear-gradient(to right, transparent, #8a7535 30%, #8a7535 70%, transparent)", margin:"12px 0 0", opacity:0.7 }} />
       </div>
 
       {/* Tabs */}
-      <div style={{ display:"flex", justifyContent:"center", gap:0, marginBottom:18, borderBottom:"1px solid #2a2018" }}>
-        {[{ id:"entry", label:"⚔ Battle Log" }, { id:"dashboard", label:"📊 War Room" }, { id:"trophy", label:"🏆 Trophy Room" }, { id:"settings", label:"⚙ Party" }].map((t) => (
-          <button key={t.id} onClick={() => setTab(t.id)} style={{
-            background: tab === t.id ? "linear-gradient(180deg, #2a2018, transparent)" : "transparent",
-            border:"none", borderBottom: tab === t.id ? "2px solid #daa520" : "2px solid transparent",
-            color: tab === t.id ? "#daa520" : "#5c4a32",
-            padding:"10px 20px", fontSize:12, fontWeight:700, cursor:"pointer",
-            fontFamily:"'MedievalSharp', cursive", letterSpacing:1, transition:"all .2s",
-            textShadow: tab === t.id ? "0 0 8px rgba(218,165,32,0.3)" : "none",
-          }}>{t.label}</button>
+      <div style={{ display:"flex", gap:"2px", margin:"10px 0 14px", borderBottom:"1px solid #4a3d2a", overflowX:"auto" }}>
+        {[{ id:"entry", label:"Battle Log" }, { id:"dashboard", label:"War Room" }, { id:"trophy", label:"Trophy Room" }, { id:"settings", label:"Party" }].map((t) => (
+          <button key={t.id} onClick={() => setTab(t.id)}
+            onMouseEnter={(e) => { if (tab !== t.id) e.currentTarget.style.color = "#d4c5a0"; }}
+            onMouseLeave={(e) => { if (tab !== t.id) e.currentTarget.style.color = "#8a7d65"; }}
+            style={{
+              flex:1, minWidth:0, padding:"10px 6px",
+              background:"transparent", border:"none",
+              borderBottom: tab === t.id ? "3px solid #c8a84e" : "3px solid transparent",
+              color: tab === t.id ? "#c8a84e" : "#8a7d65",
+              fontFamily:"'MedievalSharp', cursive", fontSize:"0.92rem",
+              cursor:"pointer", transition:"all 0.2s",
+              whiteSpace:"nowrap", textAlign:"center",
+            }}>{t.label}</button>
         ))}
       </div>
 
@@ -1725,8 +1727,9 @@ export default function App() {
 /* ─── Shared styles ─── */
 const rootStyle = {
   fontFamily:"'Spectral', serif",
-  background:"radial-gradient(ellipse at top, #1a1510 0%, #0d0b09 70%)",
-  color:"#c4a97d", padding:20, minHeight:"100vh", boxSizing:"border-box",
+  background:"#1a1510",
+  color:"#d4c5a0", padding:"12px", minHeight:"100vh", boxSizing:"border-box",
+  maxWidth:"900px", margin:"0 auto",
 };
 const tableStyle = { width:"100%", borderCollapse:"collapse", fontFamily:"'Spectral', serif", fontSize:13 };
 const summaryTableStyle = { ...tableStyle, tableLayout:"fixed" };
