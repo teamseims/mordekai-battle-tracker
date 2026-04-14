@@ -1462,23 +1462,6 @@ export default function App() {
     return () => supabase.removeChannel(channel);
   }, [loaded]);
 
-  // Subscribe to realtime changes from other users.
-  useEffect(() => {
-    if (!supabase || !loaded) return;
-    const channel = supabase
-      .channel("campaign-sync")
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "campaigns", filter: `id=eq.${CAMPAIGN_ID}` }, ({ new: row }) => {
-        if (row.client_id === CLIENT_ID) return; // ignore our own echoes
-        const s = row.state;
-        if (!s) return;
-        setPlayers(s.players || DEFAULT_PLAYERS);
-        setBattles(s.battles || []);
-        setActiveBattleIdx(s.activeBattleIdx ?? 0);
-      })
-      .subscribe();
-    return () => supabase.removeChannel(channel);
-  }, [loaded]);
-
   const addBattle = () => { const name = newBattleName.trim() || `Encounter ${battles.length + 1}`; setBattles([...battles, createEmptyBattle(name, players)]); setActiveBattleIdx(battles.length); setNewBattleName(""); setShowNewBattle(false); setTab("entry"); };
   const deleteBattle = (idx) => { const next = battles.filter((_, i) => i !== idx); setBattles(next); setActiveBattleIdx(Math.min(activeBattleIdx, Math.max(0, next.length - 1))); };
   const updateBattleData = (data) => setBattles((p) => p.map((b, i) => i === activeBattleIdx ? { ...b, data } : b));
@@ -1644,17 +1627,17 @@ export default function App() {
 
       {/* Header */}
       <div style={{ textAlign:"center", marginBottom:22, position:"relative" }}>
-        <div style={{ display:"flex", justifyContent:"center", alignItems:"center", gap:12, marginBottom:4 }}>
-          <D20Icon size={32} />
-          <h1 style={{ fontFamily:"'Cinzel Decorative', serif", fontSize:28, fontWeight:700, color:"#daa520", margin:0, letterSpacing:4, textShadow:"0 0 20px rgba(218,165,32,0.2), 0 2px 4px rgba(0,0,0,0.5)" }}>
+        <div style={{ display:"flex", justifyContent:"center", alignItems:"center", gap:16, marginBottom:6 }}>
+          <D20Icon size={44} />
+          <h1 style={{ fontFamily:"'Cinzel Decorative', serif", fontSize:"clamp(22px, 4vw, 46px)", fontWeight:700, color:"#daa520", margin:0, letterSpacing:"clamp(2px, 0.5vw, 6px)", textShadow:"0 0 30px rgba(218,165,32,0.35), 0 0 10px rgba(218,165,32,0.15), 0 2px 6px rgba(0,0,0,0.7)" }}>
             MORDEKAI'S BROKEN SEAL
           </h1>
-          <D20Icon size={32} />
+          <D20Icon size={44} />
         </div>
         <div style={{ fontSize:11, textTransform:"uppercase", letterSpacing:4, color:"#5c4a32", fontWeight:600, fontFamily:"'Spectral', serif" }}>
           Chronicle of Battle
         </div>
-        <div style={{ fontSize:10, color:"#3a3020", fontStyle:"italic", marginTop:4, fontFamily:"'Spectral', serif", display:"flex", justifyContent:"center", alignItems:"center", gap:10 }}>
+        <div style={{ fontSize:11, color:"#6b5a3e", fontStyle:"italic", marginTop:5, fontFamily:"'Spectral', serif", display:"flex", justifyContent:"center", alignItems:"center", gap:8 }}>
           <span>{battles.length} encounter{battles.length !== 1 ? "s" : ""} recorded · {players.length} adventurer{players.length !== 1 ? "s" : ""} in the party</span>
           {supabase && (
             <span style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:9, textTransform:"uppercase", letterSpacing:1, fontStyle:"normal" }}>
@@ -1665,7 +1648,7 @@ export default function App() {
             </span>
           )}
         </div>
-        <div style={{ margin:"10px auto 0", width:200, height:1, background:"linear-gradient(90deg, transparent, #5c4a32, transparent)" }} />
+        <div style={{ margin:"12px auto 0", width:"min(360px, 70%)", height:1, background:"linear-gradient(90deg, transparent, #8b6914 20%, #daa520 50%, #8b6914 80%, transparent)" }} />
       </div>
 
       {/* Tabs */}
