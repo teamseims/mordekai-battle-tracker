@@ -121,13 +121,18 @@ const Divider = () => (
 
 const D20Icon = ({ size = 28, color = "#daa520" }) => (
   <svg width={size} height={size} viewBox="0 0 40 40" style={{ verticalAlign: "middle" }}>
-    <polygon points="20,2 37,14 32,35 8,35 3,14" fill="none" stroke={color} strokeWidth="1.8" strokeLinejoin="round"/>
-    <polygon points="20,2 8,35 32,35" fill="none" stroke={color} strokeWidth="0.8" opacity="0.5"/>
-    <line x1="20" y1="2" x2="37" y2="14" stroke={color} strokeWidth="0.5" opacity="0.3"/>
-    <line x1="20" y1="2" x2="3" y2="14" stroke={color} strokeWidth="0.5" opacity="0.3"/>
-    <line x1="3" y1="14" x2="32" y2="35" stroke={color} strokeWidth="0.5" opacity="0.3"/>
-    <line x1="37" y1="14" x2="8" y2="35" stroke={color} strokeWidth="0.5" opacity="0.3"/>
-    <text x="20" y="23" textAnchor="middle" fill={color} fontSize="11" fontFamily="MedievalSharp, serif" fontWeight="bold">20</text>
+    {/* Blade — tapers to point at top */}
+    <path d="M20,2 L18,27 L20,25 L22,27 Z" fill={color} fillOpacity="0.18" stroke={color} strokeWidth="0.9" strokeLinejoin="round"/>
+    {/* Fuller — central groove */}
+    <line x1="20" y1="4" x2="20" y2="23.5" stroke={color} strokeWidth="0.7" opacity="0.4"/>
+    {/* Cross-guard */}
+    <line x1="7" y1="27" x2="33" y2="27" stroke={color} strokeWidth="2.8" strokeLinecap="round"/>
+    <circle cx="7"  cy="27" r="1.6" fill={color}/>
+    <circle cx="33" cy="27" r="1.6" fill={color}/>
+    {/* Grip */}
+    <rect x="18.8" y="28" width="2.4" height="7.5" rx="1" fill={color}/>
+    {/* Pommel — diamond */}
+    <path d="M20,38 L22.5,36 L20,34 L17.5,36 Z" fill={color}/>
   </svg>
 );
 
