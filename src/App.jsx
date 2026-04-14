@@ -1623,13 +1623,13 @@ export default function App() {
 
   return (
     <div style={rootStyle}>
-      <link href="https://fonts.googleapis.com/css2?family=MedievalSharp&family=Spectral:ital,wght@0,400;0,600;0,700;1,400&family=Cinzel+Decorative:wght@700&display=swap" rel="stylesheet" />
+      <link href="https://fonts.googleapis.com/css2?family=MedievalSharp&family=Spectral:ital,wght@0,400;0,600;0,700;1,400&family=Cinzel+Decorative:wght@400;700&display=swap" rel="stylesheet" />
 
       {/* Header */}
       <div style={{ textAlign:"center", padding:"24px 16px 14px", marginBottom:"4px" }}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:12 }}>
           <D20Icon size={44} />
-          <div style={{ fontFamily:"'Cinzel Decorative', cursive", fontSize:"2.6rem", color:"#c8a84e", textShadow:"0 2px 14px rgba(200,168,78,0.35)", letterSpacing:"5px", textTransform:"uppercase", lineHeight:1.1, margin:0 }}>
+          <div style={{ fontFamily:"'Cinzel Decorative', cursive", fontSize:"2.6rem", fontWeight:400, color:"#c8a84e", textShadow:"0 2px 14px rgba(200,168,78,0.35)", letterSpacing:"5px", textTransform:"uppercase", lineHeight:1.1, margin:0 }}>
             MORDEKAI'S BROKEN SEAL
           </div>
           <D20Icon size={44} />
