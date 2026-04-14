@@ -1729,7 +1729,6 @@ const rootStyle = {
   fontFamily:"'Spectral', serif",
   background:"#1a1510",
   color:"#d4c5a0", padding:"12px", minHeight:"100vh", boxSizing:"border-box",
-  maxWidth:"900px", margin:"0 auto",
 };
 const tableStyle = { width:"100%", borderCollapse:"collapse", fontFamily:"'Spectral', serif", fontSize:13 };
 const summaryTableStyle = { ...tableStyle, tableLayout:"fixed" };
