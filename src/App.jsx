@@ -69,11 +69,11 @@ let _onSyncChange = null; // set by the App component to update sync status
 async function loadState() {
   if (supabase) {
     try {
-      const { data } = await supabase
-        .from("campaigns")
-        .select("state")
-        .eq("id", CAMPAIGN_ID)
-        .single();
+      const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 5000));
+      const { data } = await Promise.race([
+        supabase.from("campaigns").select("state").eq("id", CAMPAIGN_ID).single(),
+        timeout,
+      ]);
       if (data?.state && Object.keys(data.state).length > 0) {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(data.state));
         return data.state;
