@@ -1619,7 +1619,7 @@ export default function App() {
 
   if (!loaded) return (
     <div style={{ ...rootStyle, display:"flex", justifyContent:"center", alignItems:"center", minHeight:300 }}>
-      <D20Icon size={40} /><span style={{ color:"#8b7355", marginLeft:12, fontFamily:"'MedievalSharp', cursive" }}>Loading the tome…</span>
+      <span style={{ fontSize:40 }}>⚔</span><span style={{ color:"#8b7355", marginLeft:12, fontFamily:"'MedievalSharp', cursive" }}>Loading the tome…</span>
     </div>
   );
 
@@ -1630,11 +1630,11 @@ export default function App() {
       {/* Header */}
       <div style={{ textAlign:"center", padding:"24px 16px 14px", marginBottom:"4px" }}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:12 }}>
-          <D20Icon size={44} />
+          <span style={{ fontSize:44 }}>⚔</span>
           <div style={{ fontFamily:"'Cinzel Decorative', cursive", fontSize:"2.6rem", fontWeight:400, color:"#c8a84e", textShadow:"0 2px 14px rgba(200,168,78,0.35)", letterSpacing:"5px", textTransform:"uppercase", lineHeight:1.1, margin:0 }}>
             MORDEKAI'S BROKEN SEAL
           </div>
-          <D20Icon size={44} />
+          <span style={{ fontSize:44 }}>⚔</span>
         </div>
         <div style={{ fontSize:"0.6rem", color:"#8a7d65", marginTop:"5px", letterSpacing:"8px", textTransform:"uppercase", fontFamily:"'MedievalSharp', cursive" }}>
           Chronicle of Battle
