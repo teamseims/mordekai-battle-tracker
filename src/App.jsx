@@ -8,17 +8,6 @@ import {
   AreaChart, Area, LabelList,
 } from "recharts";
 
-const D20Icon = ({ size = 28, color = "#daa520" }) => (
-  <svg width={size} height={size} viewBox="0 0 40 40" style={{ verticalAlign: "middle" }}>
-    <path d="M20,2 L18,27 L20,25 L22,27 Z" fill={color} fillOpacity="0.18" stroke={color} strokeWidth="0.9" strokeLinejoin="round"/>
-    <line x1="20" y1="4" x2="20" y2="23.5" stroke={color} strokeWidth="0.7" opacity="0.4"/>
-    <line x1="7" y1="27" x2="33" y2="27" stroke={color} strokeWidth="2.8" strokeLinecap="round"/>
-    <circle cx="7"  cy="27" r="1.6" fill={color}/>
-    <circle cx="33" cy="27" r="1.6" fill={color}/>
-    <rect x="18.8" y="28" width="2.4" height="7.5" rx="1" fill={color}/>
-    <path d="M20,38 L22.5,36 L20,34 L17.5,36 Z" fill={color}/>
-  </svg>
-);
 
 const STAT_TYPES = ["DMG", "KILL", "HEAL", "REVIVE", "NAT 20", "NAT 1"];
 const STAT_ICONS = { DMG: "⚔", KILL: "💀", HEAL: "❤", REVIVE: "✦", "NAT 20": "★", "NAT 1": "✗" };
