@@ -1219,7 +1219,6 @@ function TrophyRoom({ battles, players, trophyImages, setTrophyImages, trophyMet
   if (trophies.length === 0) {
     return (
       <ParchmentPanel style={{ textAlign:"center", padding:40 }}>
-        <D20Icon size={48} color="#3a3020" />
         <p style={{ color:"#5c4a32", fontSize:14, marginTop:12, fontFamily:"'Spectral', serif", fontStyle:"italic" }}>
           No named kills yet.<br />The Trophy Room awaits your first conquest.
         </p>
@@ -1696,7 +1695,6 @@ export default function App() {
             <DataEntry battle={activeBattle} players={players} onChange={updateBattleData} onRoundsChange={updateBattleRounds} onDmgChange={updateDmgCell} onKillChange={updateKillCell} playerDefaults={playerDefaults} />
           ) : (
             <ParchmentPanel style={{ textAlign:"center", padding:40 }}>
-              <D20Icon size={48} color="#3a3020" />
               <p style={{ color:"#5c4a32", fontSize:14, marginTop:12, fontFamily:"'Spectral', serif", fontStyle:"italic" }}>
                 No encounters chronicled yet.<br />Click <strong style={{ color:"#8b7355" }}>+ New Encounter</strong> to begin your tale.
               </p>
@@ -1707,7 +1705,7 @@ export default function App() {
 
       {tab === "dashboard" && (
         battles.length === 0
-          ? <ParchmentPanel style={{ textAlign:"center", padding:40 }}><D20Icon size={48} color="#3a3020" /><p style={{ color:"#5c4a32", fontSize:14, marginTop:12, fontFamily:"'Spectral', serif", fontStyle:"italic" }}>The War Room awaits your first encounter.</p></ParchmentPanel>
+          ? <ParchmentPanel style={{ textAlign:"center", padding:40 }}><p style={{ color:"#5c4a32", fontSize:14, marginTop:12, fontFamily:"'Spectral', serif", fontStyle:"italic" }}>The War Room awaits your first encounter.</p></ParchmentPanel>
           : <Dashboard battles={battles} players={players} filterPlayer={filterPlayer} filterBattle={filterBattle} filterRound={filterRound}
               setFilterPlayer={setFilterPlayer} setFilterBattle={setFilterBattle} setFilterRound={setFilterRound} />
       )}
