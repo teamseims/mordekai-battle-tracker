@@ -8,8 +8,21 @@ import {
   AreaChart, Area, LabelList,
 } from "recharts";
 
+const D20Icon = ({ size = 28, color = "#daa520" }) => (
+  <svg width={size} height={size} viewBox="0 0 100 100" style={{ verticalAlign: "middle", display: "inline-block" }}>
+    <polygon points="50,3 96,27 96,73 50,97 4,73 4,27" fill={color} fillOpacity="0.12" stroke={color} strokeWidth="3.5" strokeLinejoin="round" />
+    <line x1="4" y1="27" x2="96" y2="27" stroke={color} strokeWidth="2" opacity="0.7" />
+    <line x1="4" y1="73" x2="96" y2="73" stroke={color} strokeWidth="2" opacity="0.7" />
+    <line x1="50" y1="3" x2="4" y2="73" stroke={color} strokeWidth="2" opacity="0.7" />
+    <line x1="50" y1="3" x2="96" y2="73" stroke={color} strokeWidth="2" opacity="0.7" />
+    <line x1="4" y1="27" x2="96" y2="73" stroke={color} strokeWidth="2" opacity="0.7" />
+    <line x1="96" y1="27" x2="4" y2="73" stroke={color} strokeWidth="2" opacity="0.7" />
+    <text x="50" y="55" textAnchor="middle" dominantBaseline="middle" fill={color} fontSize="24" fontWeight="bold" fontFamily="serif" opacity="0.9">20</text>
+  </svg>
+);
+
 const STAT_TYPES = ["DMG", "KILL", "HEAL", "REVIVE", "NAT 20", "NAT 1"];
-const STAT_ICONS = { DMG: "", KILL: "💀", HEAL: "❤", REVIVE: "✦", "NAT 20": "★", "NAT 1": "✗" };
+const STAT_ICONS = { DMG: <D20Icon size={14} />, KILL: "💀", HEAL: "❤", REVIVE: "✦", "NAT 20": "★", "NAT 1": "✗" };
 const STAT_COLORS = {
   DMG: "#d4442a", KILL: "#8b1a1a", HEAL: "#2e8b57", REVIVE: "#4682b4",
   "NAT 20": "#daa520", "NAT 1": "#5c5550",
@@ -119,7 +132,7 @@ const Divider = () => (
   </div>
 );
 
-const D20Icon = () => null;
+
 
 /* ─── Tooltip ─── */
 const ChartTooltip = ({ active, payload, label }) => {
@@ -600,7 +613,7 @@ function Dashboard({ battles, players, filterPlayer, filterBattle, filterRound, 
 
   const radarData = useMemo(() => {
     const maxes = {}; STAT_TYPES.forEach((s) => { maxes[s] = Math.max(1, ...players.map((p) => stats[p][s])); });
-    return STAT_TYPES.map((s) => { const row = { stat: STAT_ICONS[s] ? `${STAT_ICONS[s]} ${s}` : s }; fp.forEach((p) => { row[p] = Math.round((stats[p][s] / maxes[s]) * 100); }); return row; });
+    return STAT_TYPES.map((s) => { const icon = typeof STAT_ICONS[s] === "string" ? STAT_ICONS[s] : ""; const row = { stat: icon ? `${icon} ${s}` : s }; fp.forEach((p) => { row[p] = Math.round((stats[p][s] / maxes[s]) * 100); }); return row; });
   }, [stats, fp, players]);
 
   const battleAreaData = useMemo(() => {
@@ -706,7 +719,7 @@ function Dashboard({ battles, players, filterPlayer, filterBattle, filterRound, 
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(150px, 1fr))", gap:10, marginBottom:16 }}>
         <KpiCard label="Kill / Revive Ratio" value={kpi.killReviveRatio} color="#d4442a" sub={`${totalKILL} kills · ${totalREVIVE} revives`} icon="💀" />
         <KpiCard label="NAT 20 / NAT 1" value={kpi.nat20to1Ratio} color="#daa520" sub={`${totalNAT20} crits · ${totalNAT1} fumbles`} icon="★" />
-        <KpiCard label="Avg DMG / Round" value={kpi.avgDmgPerRound} color="#d4442a" sub={`${totalDMG} total damage`} />
+        <KpiCard label="Avg DMG / Round" value={kpi.avgDmgPerRound} color="#d4442a" sub={`${totalDMG} total damage`} icon={<D20Icon size={22} />} />
         <KpiCard label="DMG per Kill" value={kpi.dmgPerKill} color="#8b1a1a" icon="🗡" />
       </div>
 
@@ -727,7 +740,7 @@ function Dashboard({ battles, players, filterPlayer, filterBattle, filterRound, 
         <>
           {/* ── 3 grouped bar charts: stat pairs by adventurer ── */}
           <div style={{ display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:14, marginBottom:14 }}>
-            {[["DMG","HEAL",null],["KILL","REVIVE","💀"],["NAT 20","NAT 1","★"]].map(([a, b, icon]) => {
+            {[["DMG","HEAL",<D20Icon key="dmg" size={12} />],["KILL","REVIVE","💀"],["NAT 20","NAT 1","★"]].map(([a, b, icon]) => {
               const data = fp.map((p) => ({ name: p.length > 9 ? p.slice(0,8)+"…" : p, [a]: stats[p][a], [b]: stats[p][b] }));
               return (
                 <ChartCard key={a} title={`${a} & ${b}`} height={210} icon={icon}>
@@ -790,7 +803,7 @@ function Dashboard({ battles, players, filterPlayer, filterBattle, filterRound, 
 
           {/* ── Stacked horizontal bar: DMG per round broken down by player ── */}
           {stackedDmgData.length > 0 && fp.length > 1 && (
-            <ChartCard title="Damage by Player per Round" height={Math.max(220, stackedDmgData.length * 34 + 80)}>
+            <ChartCard title="Damage by Player per Round" height={Math.max(220, stackedDmgData.length * 34 + 80)} icon={<D20Icon size={12} />}>
               <ResponsiveContainer>
                 <BarChart layout="vertical" data={stackedDmgData} barCategoryGap="20%">
                   <CartesianGrid strokeDasharray="3 3" stroke="#2a2018" />
@@ -963,7 +976,7 @@ function Dashboard({ battles, players, filterPlayer, filterBattle, filterRound, 
 
       {battles.length > 0 && (
         <>
-          <SectionTitle>By Encounter</SectionTitle>
+          <SectionTitle icon={<D20Icon size={14} />}>By Encounter</SectionTitle>
           <ParchmentPanel>
             <div style={{ overflowX:"auto" }}>
               <table style={summaryTableStyle}>
