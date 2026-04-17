@@ -24,7 +24,7 @@ describe('App rendering', () => {
     render(<App />)
     await screen.findByText(/Battle Log/i)
     expect(screen.getByText(/War Room/i)).toBeInTheDocument()
-    expect(screen.getByText(/Party/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Party' })).toBeInTheDocument()
   })
 })
 
@@ -60,7 +60,7 @@ describe('localStorage persistence', () => {
     )
     render(<App />)
     // The Party tab lists current members; navigate there to check
-    await userEvent.click(await screen.findByText(/Party/i))
+    await userEvent.click(await screen.findByRole('button', { name: 'Party' }))
     expect(await screen.findByText('Aldric')).toBeInTheDocument()
     expect(screen.getByText('Zephyr')).toBeInTheDocument()
   })
