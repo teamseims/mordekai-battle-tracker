@@ -21,7 +21,7 @@ const D20Icon = ({ size = 28, color = "#daa520" }) => (
 );
 
 const STAT_TYPES = ["DMG", "KILL", "HEAL", "REVIVE", "NAT 20", "NAT 1"];
-const STAT_ICONS = { DMG: <D20Icon size={14} />, KILL: "💀", HEAL: "❤", REVIVE: "✦", "NAT 20": "★", "NAT 1": "✗" };
+const STAT_ICONS = { DMG: "⚔", KILL: "💀", HEAL: "❤", REVIVE: "✦", "NAT 20": "★", "NAT 1": "✗" };
 const STAT_COLORS = {
   DMG: "#d4442a", KILL: "#8b1a1a", HEAL: "#2e8b57", REVIVE: "#4682b4",
   "NAT 20": "#daa520", "NAT 1": "#5c5550",
@@ -718,7 +718,7 @@ function Dashboard({ battles, players, filterPlayer, filterBattle, filterRound, 
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(150px, 1fr))", gap:10, marginBottom:16 }}>
         <KpiCard label="Kill / Revive Ratio" value={kpi.killReviveRatio} color="#d4442a" sub={`${totalKILL} kills · ${totalREVIVE} revives`} icon="💀" />
         <KpiCard label="NAT 20 / NAT 1" value={kpi.nat20to1Ratio} color="#daa520" sub={`${totalNAT20} crits · ${totalNAT1} fumbles`} icon="★" />
-        <KpiCard label="Avg DMG / Round" value={kpi.avgDmgPerRound} color="#d4442a" sub={`${totalDMG} total damage`} icon={<D20Icon size={22} />} />
+        <KpiCard label="Avg DMG / Round" value={kpi.avgDmgPerRound} color="#d4442a" sub={`${totalDMG} total damage`} icon="⚔" />
         <KpiCard label="DMG per Kill" value={kpi.dmgPerKill} color="#8b1a1a" icon="🗡" />
       </div>
 
@@ -739,7 +739,7 @@ function Dashboard({ battles, players, filterPlayer, filterBattle, filterRound, 
         <>
           {/* ── 3 grouped bar charts: stat pairs by adventurer ── */}
           <div style={{ display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:14, marginBottom:14 }}>
-            {[["DMG","HEAL",<D20Icon key="dmg" size={12} />],["KILL","REVIVE","💀"],["NAT 20","NAT 1","★"]].map(([a, b, icon]) => {
+            {[["DMG","HEAL","⚔"],["KILL","REVIVE","💀"],["NAT 20","NAT 1","★"]].map(([a, b, icon]) => {
               const data = fp.map((p) => ({ name: p.length > 9 ? p.slice(0,8)+"…" : p, [a]: stats[p][a], [b]: stats[p][b] }));
               return (
                 <ChartCard key={a} title={`${a} & ${b}`} height={210} icon={icon}>
@@ -802,7 +802,7 @@ function Dashboard({ battles, players, filterPlayer, filterBattle, filterRound, 
 
           {/* ── Stacked horizontal bar: DMG per round broken down by player ── */}
           {stackedDmgData.length > 0 && fp.length > 1 && (
-            <ChartCard title="Damage by Player per Round" height={Math.max(220, stackedDmgData.length * 34 + 80)} icon={<D20Icon size={12} />}>
+            <ChartCard title="Damage by Player per Round" height={Math.max(220, stackedDmgData.length * 34 + 80)} icon="⚔">
               <ResponsiveContainer>
                 <BarChart layout="vertical" data={stackedDmgData} barCategoryGap="20%">
                   <CartesianGrid strokeDasharray="3 3" stroke="#2a2018" />
@@ -975,7 +975,7 @@ function Dashboard({ battles, players, filterPlayer, filterBattle, filterRound, 
 
       {battles.length > 0 && (
         <>
-          <SectionTitle icon={<D20Icon size={14} />}>By Encounter</SectionTitle>
+          <SectionTitle icon="⚔">By Encounter</SectionTitle>
           <ParchmentPanel>
             <div style={{ overflowX:"auto" }}>
               <table style={summaryTableStyle}>
