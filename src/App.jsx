@@ -1628,15 +1628,11 @@ export default function App() {
 
       {/* Header */}
       <div style={{ textAlign:"center", padding:"24px 16px 14px", marginBottom:"4px" }}>
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:12 }}>
-          <span style={{ fontSize:44 }}>⚔</span>
-          <div style={{ fontFamily:"'Cinzel Decorative', cursive", fontSize:"2.6rem", fontWeight:400, color:"#c8a84e", textShadow:"0 2px 14px rgba(200,168,78,0.35)", letterSpacing:"5px", textTransform:"uppercase", lineHeight:1.1, margin:0 }}>
-            MORDEKAI'S BROKEN SEAL
-          </div>
-          <span style={{ fontSize:44 }}>⚔</span>
+        <div style={{ fontFamily:"'Cinzel Decorative', cursive", fontSize:"2.6rem", fontWeight:400, color:"#c8a84e", textShadow:"0 2px 14px rgba(200,168,78,0.35)", letterSpacing:"5px", textTransform:"uppercase", lineHeight:1.1, margin:0 }}>
+          MORDEKAI'S BROKEN SEAL
         </div>
         <div style={{ fontSize:"0.6rem", color:"#8a7d65", marginTop:"5px", letterSpacing:"8px", textTransform:"uppercase", fontFamily:"'MedievalSharp', cursive" }}>
-          Chronicle of Battle
+          Chronicles of Battle
         </div>
         <div style={{ fontSize:"0.68rem", color:"#8a7d65", marginTop:"5px", fontStyle:"italic", display:"flex", alignItems:"center", justifyContent:"center", gap:0 }}>
           <span>{battles.length} encounter{battles.length !== 1 ? "s" : ""} recorded · {players.length} adventurer{players.length !== 1 ? "s" : ""} in the party</span>
